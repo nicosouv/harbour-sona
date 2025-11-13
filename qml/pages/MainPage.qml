@@ -377,7 +377,7 @@ Page {
                             spacing: Theme.paddingSmall
 
                             Icon {
-                                source: "image://theme/icon-l-browser"
+                                source: "image://theme/icon-l-favorite"
                                 color: Theme.highlightColor
                                 width: Theme.iconSizeLarge
                                 height: Theme.iconSizeLarge
@@ -428,7 +428,7 @@ Page {
                             spacing: Theme.paddingSmall
 
                             Icon {
-                                source: "image://theme/icon-l-search"
+                                source: "image://theme/icon-m-search"
                                 color: Theme.highlightColor
                                 width: Theme.iconSizeLarge
                                 height: Theme.iconSizeLarge
@@ -530,7 +530,7 @@ Page {
                             spacing: Theme.paddingSmall
 
                             Icon {
-                                source: "image://theme/icon-l-playlist"
+                                source: "image://theme/icon-m-file-folder-playlist"
                                 color: Theme.highlightColor
                                 width: Theme.iconSizeLarge
                                 height: Theme.iconSizeLarge
