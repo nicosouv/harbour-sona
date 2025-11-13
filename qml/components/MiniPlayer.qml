@@ -17,8 +17,8 @@ BackgroundItem {
 
     Rectangle {
         anchors.fill: parent
-        color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
-        opacity: miniPlayer.highlighted ? 0.3 : 0.2
+        color: Theme.rgba(Theme.highlightDimmerColor, 0.95)
+        opacity: miniPlayer.highlighted ? 1.0 : 0.95
 
         Behavior on opacity {
             NumberAnimation { duration: 100 }

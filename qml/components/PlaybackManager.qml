@@ -19,10 +19,15 @@ QtObject {
     property bool shuffle: false
     property string repeatMode: "off"
 
+    // Error notification
+    property string errorMessage: ""
+    property bool hasError: false
+
     // Signals for state changes
     signal playbackStateChanged()
     signal trackChanged()
     signal progressChanged()
+    signal errorOccurred(string message)
 
     // Auto-refresh timer
     property var _refreshTimer: Timer {
@@ -46,6 +51,24 @@ QtObject {
                 playbackManager.progressChanged()
             }
         }
+    }
+
+    // Error clear timer
+    property var _errorClearTimer: Timer {
+        interval: 3000
+        repeat: false
+        onTriggered: {
+            playbackManager.hasError = false
+            playbackManager.errorMessage = ""
+        }
+    }
+
+    // Show error message
+    function showError(message) {
+        errorMessage = message
+        hasError = true
+        errorOccurred(message)
+        _errorClearTimer.restart()
     }
 
     // Refresh playback state from Spotify
@@ -118,6 +141,9 @@ QtObject {
             if (callback) callback()
         }, function(error) {
             console.error("PlaybackManager: Failed to play:", error)
+            if (error && error.toString().indexOf("No active device") !== -1) {
+                showError(qsTr("No active device. Please select a device first."))
+            }
             if (errorCallback) errorCallback(error)
         })
     }
@@ -129,6 +155,9 @@ QtObject {
             if (callback) callback()
         }, function(error) {
             console.error("PlaybackManager: Failed to pause:", error)
+            if (error && error.toString().indexOf("No active device") !== -1) {
+                showError(qsTr("No active device. Please select a device first."))
+            }
             if (errorCallback) errorCallback(error)
         })
     }
@@ -139,6 +168,9 @@ QtObject {
             if (callback) callback()
         }, function(error) {
             console.error("PlaybackManager: Failed to skip to next:", error)
+            if (error && error.toString().indexOf("No active device") !== -1) {
+                showError(qsTr("No active device. Please select a device first."))
+            }
             if (errorCallback) errorCallback(error)
         })
     }
@@ -149,6 +181,9 @@ QtObject {
             if (callback) callback()
         }, function(error) {
             console.error("PlaybackManager: Failed to skip to previous:", error)
+            if (error && error.toString().indexOf("No active device") !== -1) {
+                showError(qsTr("No active device. Please select a device first."))
+            }
             if (errorCallback) errorCallback(error)
         })
     }

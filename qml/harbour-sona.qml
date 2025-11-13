@@ -1,5 +1,6 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
+import "components" 1.0
 
 ApplicationWindow
 {
@@ -9,4 +10,9 @@ ApplicationWindow
 
     cover: Qt.resolvedUrl("cover/CoverPage.qml")
     allowedOrientations: defaultAllowedOrientations
+
+    ErrorNotification {
+        anchors.top: parent.top
+        width: parent.width
+    }
 }
