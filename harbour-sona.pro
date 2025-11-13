@@ -19,6 +19,8 @@ DISTFILES += qml/harbour-sona.qml \
     qml/pages/DiscoverPage.qml \
     qml/components/PlaybackManager.qml \
     qml/components/MiniPlayer.qml \
+    qml/components/TrackContextMenu.qml \
+    qml/components/PlaylistDialog.qml \
     qml/components/qmldir \
     qml/js/SpotifyAPI.js \
     qml/config.js \

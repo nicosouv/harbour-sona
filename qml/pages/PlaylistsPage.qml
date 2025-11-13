@@ -17,6 +17,21 @@ Page {
             bottom: miniPlayer.top
         }
 
+        PullDownMenu {
+            MenuItem {
+                text: qsTr("Create Playlist")
+                onClicked: {
+                    pageStack.push(Qt.resolvedUrl("../components/PlaylistDialog.qml"), {
+                        isEditMode: false
+                    })
+                }
+            }
+            MenuItem {
+                text: qsTr("Refresh")
+                onClicked: loadPlaylists()
+            }
+        }
+
         header: PageHeader {
             title: qsTr("My Playlists")
         }

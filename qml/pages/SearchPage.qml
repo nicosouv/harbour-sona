@@ -17,6 +17,13 @@ Page {
         }
         contentHeight: column.height
 
+        PullDownMenu {
+            MenuItem {
+                text: qsTr("Clear Results")
+                onClicked: resultsModel.clear()
+            }
+        }
+
         Column {
             id: column
             width: parent.width

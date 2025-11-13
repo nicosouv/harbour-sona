@@ -20,6 +20,23 @@ Page {
             bottom: miniPlayer.top
         }
 
+        PullDownMenu {
+            MenuItem {
+                text: qsTr("Edit Playlist")
+                onClicked: {
+                    pageStack.push(Qt.resolvedUrl("../components/PlaylistDialog.qml"), {
+                        isEditMode: true,
+                        playlistId: playlistId,
+                        initialName: playlistName
+                    })
+                }
+            }
+            MenuItem {
+                text: qsTr("Refresh")
+                onClicked: loadTracks()
+            }
+        }
+
         header: Column {
             width: parent.width
 

@@ -1,2 +1,4 @@
 singleton PlaybackManager 1.0 PlaybackManager.qml
 MiniPlayer 1.0 MiniPlayer.qml
+TrackContextMenu 1.0 TrackContextMenu.qml
+PlaylistDialog 1.0 PlaylistDialog.qml

@@ -18,6 +18,17 @@ Page {
         }
         contentHeight: column.height
 
+        PullDownMenu {
+            MenuItem {
+                text: qsTr("Refresh")
+                onClicked: {
+                    if (currentTab === 0) loadSavedTracks()
+                    else if (currentTab === 1) loadSavedAlbums()
+                    else if (currentTab === 2) loadSavedShows()
+                }
+            }
+        }
+
         Column {
             id: column
             width: parent.width
