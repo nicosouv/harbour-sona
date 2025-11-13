@@ -18,7 +18,7 @@ Page {
 
     Timer {
         id: refreshTimer
-        interval: 3000
+        interval: 2000
         repeat: true
         running: page.status === PageStatus.Active
         onTriggered: loadCurrentPlayback()
@@ -28,15 +28,23 @@ Page {
         anchors.fill: parent
         contentHeight: column.height
 
+        PullDownMenu {
+            MenuItem {
+                text: qsTr("Refresh")
+                onClicked: loadCurrentPlayback()
+            }
+        }
+
         Column {
             id: column
             width: parent.width
-            spacing: Theme.paddingLarge
+            spacing: Theme.paddingLarge * 2
 
             PageHeader {
                 title: qsTr("Now Playing")
             }
 
+            // Album artwork
             Item {
                 width: parent.width
                 height: albumImage.height + Theme.paddingLarge * 2
@@ -44,15 +52,39 @@ Page {
                 Image {
                     id: albumImage
                     anchors.horizontalCenter: parent.horizontalCenter
-                    width: Math.min(parent.width - Theme.horizontalPageMargin * 2, Theme.itemSizeExtraLarge * 2)
+                    width: Math.min(parent.width - Theme.horizontalPageMargin * 4, Screen.width * 0.7)
                     height: width
                     source: albumImageUrl || ""
-                    fillMode: Image.PreserveAspectCrop
+                    fillMode: Image.PreserveAspectFit
+                    smooth: true
 
                     Rectangle {
                         anchors.fill: parent
                         color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
                         visible: !albumImage.source || albumImage.status !== Image.Ready
+                        radius: Theme.paddingSmall
+
+                        Icon {
+                            anchors.centerIn: parent
+                            source: "image://theme/icon-l-music"
+                            color: Theme.secondaryColor
+                            width: Theme.iconSizeExtraLarge
+                            height: Theme.iconSizeExtraLarge
+                        }
+                    }
+
+                    layer.enabled: true
+                    layer.effect: ShaderEffect {
+                        property variant source: albumImage
+                        fragmentShader: "
+                            varying highp vec2 qt_TexCoord0;
+                            uniform sampler2D source;
+                            uniform lowp float qt_Opacity;
+                            void main() {
+                                lowp vec4 color = texture2D(source, qt_TexCoord0);
+                                gl_FragColor = color * qt_Opacity;
+                            }
+                        "
                     }
                 }
 
@@ -63,6 +95,7 @@ Page {
                 }
             }
 
+            // Track info
             Column {
                 width: parent.width
                 spacing: Theme.paddingSmall
@@ -73,7 +106,9 @@ Page {
                     text: trackName || qsTr("No track playing")
                     color: Theme.highlightColor
                     font.pixelSize: Theme.fontSizeLarge
+                    font.bold: true
                     wrapMode: Text.WordWrap
+                    maximumLineCount: 2
                     horizontalAlignment: Text.AlignHCenter
                 }
 
@@ -84,6 +119,7 @@ Page {
                     color: Theme.primaryColor
                     font.pixelSize: Theme.fontSizeMedium
                     wrapMode: Text.WordWrap
+                    maximumLineCount: 1
                     horizontalAlignment: Text.AlignHCenter
                     visible: artistName !== ""
                 }
@@ -95,49 +131,71 @@ Page {
                     color: Theme.secondaryColor
                     font.pixelSize: Theme.fontSizeSmall
                     wrapMode: Text.WordWrap
+                    maximumLineCount: 1
                     horizontalAlignment: Text.AlignHCenter
                     visible: albumName !== ""
                 }
             }
 
-            Slider {
+            // Progress bar
+            Column {
                 width: parent.width
-                minimumValue: 0
-                maximumValue: durationMs
-                value: progressMs
-                enabled: durationMs > 0
-                handleVisible: false
+                spacing: Theme.paddingSmall
 
-                Label {
-                    anchors {
-                        left: parent.left
-                        leftMargin: Theme.horizontalPageMargin
-                        bottom: parent.bottom
+                Slider {
+                    id: progressSlider
+                    width: parent.width
+                    minimumValue: 0
+                    maximumValue: durationMs
+                    value: progressMs
+                    enabled: durationMs > 0
+                    handleVisible: false
+
+                    background: Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        x: progressSlider.leftMargin
+                        width: progressSlider.width - progressSlider.leftMargin - progressSlider.rightMargin
+                        height: Theme.paddingSmall / 2
+                        radius: height / 2
+                        color: Theme.rgba(Theme.highlightColor, 0.2)
+
+                        Rectangle {
+                            width: parent.width * (progressMs / Math.max(durationMs, 1))
+                            height: parent.height
+                            radius: height / 2
+                            color: Theme.highlightColor
+                        }
                     }
-                    text: formatTime(progressMs)
-                    font.pixelSize: Theme.fontSizeExtraSmall
-                    color: Theme.secondaryColor
                 }
 
-                Label {
-                    anchors {
-                        right: parent.right
-                        rightMargin: Theme.horizontalPageMargin
-                        bottom: parent.bottom
+                Row {
+                    width: parent.width - Theme.horizontalPageMargin * 2
+                    x: Theme.horizontalPageMargin
+
+                    Label {
+                        text: formatTime(progressMs)
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                        color: Theme.secondaryColor
                     }
-                    text: formatTime(durationMs)
-                    font.pixelSize: Theme.fontSizeExtraSmall
-                    color: Theme.secondaryColor
+
+                    Item { width: parent.width - Theme.fontSizeExtraSmall * 10 }
+
+                    Label {
+                        text: formatTime(durationMs)
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                        color: Theme.secondaryColor
+                    }
                 }
             }
 
+            // Control buttons
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: Theme.paddingLarge
 
                 IconButton {
-                    icon.source: shuffle ? "image://theme/icon-m-shuffle" : "image://theme/icon-m-shuffle"
-                    highlighted: shuffle
+                    icon.source: "image://theme/icon-m-shuffle"
+                    icon.color: shuffle ? Theme.highlightColor : Theme.primaryColor
                     onClicked: {
                         SpotifyAPI.setShuffle(!shuffle, null, function() {
                             console.log("Shuffle toggled")
@@ -153,7 +211,7 @@ Page {
                     onClicked: {
                         SpotifyAPI.previous(null, function() {
                             console.log("Previous track")
-                            loadCurrentPlayback()
+                            Qt.callLater(loadCurrentPlayback)
                         }, function(error) {
                             console.error("Failed to skip to previous:", error)
                         })
@@ -162,6 +220,18 @@ Page {
 
                 IconButton {
                     icon.source: isPlaying ? "image://theme/icon-l-pause" : "image://theme/icon-l-play"
+                    icon.width: Theme.iconSizeExtraLarge
+                    icon.height: Theme.iconSizeExtraLarge
+
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: Theme.iconSizeExtraLarge * 1.5
+                        height: width
+                        radius: width / 2
+                        color: Theme.rgba(Theme.highlightColor, 0.2)
+                        z: -1
+                    }
+
                     onClicked: {
                         if (isPlaying) {
                             SpotifyAPI.pause(null, function() {
@@ -186,7 +256,7 @@ Page {
                     onClicked: {
                         SpotifyAPI.next(null, function() {
                             console.log("Next track")
-                            loadCurrentPlayback()
+                            Qt.callLater(loadCurrentPlayback)
                         }, function(error) {
                             console.error("Failed to skip to next:", error)
                         })
@@ -194,10 +264,18 @@ Page {
                 }
 
                 IconButton {
-                    icon.source: repeatMode === "off" ? "image://theme/icon-m-repeat" :
-                                 repeatMode === "context" ? "image://theme/icon-m-repeat" :
-                                 "image://theme/icon-m-repeat"
-                    highlighted: repeatMode !== "off"
+                    icon.source: "image://theme/icon-m-repeat"
+                    icon.color: repeatMode !== "off" ? Theme.highlightColor : Theme.primaryColor
+
+                    Label {
+                        anchors.centerIn: parent
+                        text: repeatMode === "track" ? "1" : ""
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                        font.bold: true
+                        color: Theme.highlightColor
+                        visible: repeatMode === "track"
+                    }
+
                     onClicked: {
                         var newMode = repeatMode === "off" ? "context" :
                                       repeatMode === "context" ? "track" : "off"
@@ -211,11 +289,7 @@ Page {
                 }
             }
 
-            Button {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: qsTr("Refresh")
-                onClicked: loadCurrentPlayback()
-            }
+            Item { height: Theme.paddingMedium }
 
             Label {
                 x: Theme.horizontalPageMargin

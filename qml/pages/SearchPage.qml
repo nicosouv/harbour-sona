@@ -47,101 +47,139 @@ Page {
                 size: BusyIndicatorSize.Large
                 anchors.horizontalCenter: parent.horizontalCenter
                 running: searching
-            }
-
-            SilicaListView {
-                id: resultsView
-                width: parent.width
-                height: page.height - column.y - searchField.height - searchTypeCombo.height
-
-                model: ListModel {
-                    id: resultsModel
-                }
-
-                delegate: ListItem {
-                    id: listItem
-                    contentHeight: Theme.itemSizeMedium
-
-                    Row {
-                        anchors.fill: parent
-                        anchors.margins: Theme.paddingMedium
-                        spacing: Theme.paddingMedium
-
-                        Image {
-                            id: resultImage
-                            width: Theme.itemSizeSmall
-                            height: Theme.itemSizeSmall
-                            source: model.imageUrl || ""
-                            fillMode: Image.PreserveAspectCrop
-
-                            Rectangle {
-                                anchors.fill: parent
-                                color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
-                                visible: !resultImage.source || resultImage.status !== Image.Ready
-                            }
-                        }
-
-                        Column {
-                            width: parent.width - resultImage.width - Theme.paddingMedium * 2
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: Theme.paddingSmall
-
-                            Label {
-                                text: model.name
-                                color: listItem.highlighted ? Theme.highlightColor : Theme.primaryColor
-                                font.pixelSize: Theme.fontSizeMedium
-                                truncationMode: TruncationMode.Fade
-                                width: parent.width
-                            }
-
-                            Label {
-                                text: model.subtitle
-                                color: listItem.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
-                                font.pixelSize: Theme.fontSizeSmall
-                                truncationMode: TruncationMode.Fade
-                                width: parent.width
-                            }
-
-                            Label {
-                                text: model.type
-                                color: Theme.secondaryColor
-                                font.pixelSize: Theme.fontSizeExtraSmall
-                            }
-                        }
-                    }
-
-                    onClicked: {
-                        if (model.type === "track") {
-                            SpotifyAPI.play(null, null, [model.uri], function() {
-                                console.log("Playing track:", model.name)
-                            }, function(error) {
-                                console.error("Failed to play track:", error)
-                            })
-                        } else if (model.type === "playlist") {
-                            pageStack.push(Qt.resolvedUrl("PlaylistDetailsPage.qml"), {
-                                playlistId: model.id,
-                                playlistName: model.name,
-                                playlistImageUrl: model.imageUrl
-                            })
-                        }
-                    }
-                }
-
-                ViewPlaceholder {
-                    enabled: resultsView.count === 0 && !searching && searchField.text.length > 0
-                    text: qsTr("No results")
-                    hintText: qsTr("Try a different search")
-                }
-
-                ViewPlaceholder {
-                    enabled: resultsView.count === 0 && !searching && searchField.text.length === 0
-                    text: qsTr("Search Spotify")
-                    hintText: qsTr("Enter a search term above")
-                }
-
-                VerticalScrollDecorator {}
+                visible: searching
             }
         }
+    }
+
+    SilicaListView {
+        id: resultsView
+        anchors {
+            top: parent.top
+            left: parent.left
+            right: parent.right
+            bottom: parent.bottom
+            topMargin: column.height
+        }
+
+        model: ListModel {
+            id: resultsModel
+        }
+
+        delegate: ListItem {
+            id: listItem
+            contentHeight: Theme.itemSizeLarge
+            width: parent.width
+
+            Row {
+                anchors {
+                    fill: parent
+                    leftMargin: Theme.horizontalPageMargin
+                    rightMargin: Theme.horizontalPageMargin
+                    topMargin: Theme.paddingMedium
+                    bottomMargin: Theme.paddingMedium
+                }
+                spacing: Theme.paddingMedium
+
+                Image {
+                    id: resultImage
+                    width: Theme.itemSizeMedium
+                    height: Theme.itemSizeMedium
+                    source: model.imageUrl || ""
+                    fillMode: Image.PreserveAspectCrop
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Rectangle {
+                        anchors.fill: parent
+                        color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
+                        visible: !resultImage.source || resultImage.status !== Image.Ready
+
+                        Icon {
+                            anchors.centerIn: parent
+                            source: model.type === "artist" ? "image://theme/icon-m-contact" :
+                                   model.type === "album" ? "image://theme/icon-m-media-artists" :
+                                   model.type === "playlist" ? "image://theme/icon-m-media-playlists" :
+                                   "image://theme/icon-m-music"
+                            color: Theme.secondaryColor
+                        }
+                    }
+                }
+
+                Column {
+                    width: parent.width - resultImage.width - parent.spacing - Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: Theme.paddingSmall
+
+                    Label {
+                        text: model.name
+                        color: listItem.highlighted ? Theme.highlightColor : Theme.primaryColor
+                        font.pixelSize: Theme.fontSizeMedium
+                        truncationMode: TruncationMode.Fade
+                        width: parent.width
+                        maximumLineCount: 1
+                    }
+
+                    Label {
+                        text: model.subtitle
+                        color: listItem.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
+                        font.pixelSize: Theme.fontSizeSmall
+                        truncationMode: TruncationMode.Fade
+                        width: parent.width
+                        maximumLineCount: 1
+                        visible: text.length > 0
+                    }
+
+                    Label {
+                        text: model.type.charAt(0).toUpperCase() + model.type.slice(1)
+                        color: Theme.rgba(Theme.highlightColor, 0.6)
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                        font.bold: true
+                    }
+                }
+            }
+
+            onClicked: {
+                if (model.type === "track") {
+                    SpotifyAPI.play(null, null, [model.uri], function() {
+                        console.log("Playing track:", model.name)
+                    }, function(error) {
+                        console.error("Failed to play track:", error)
+                    })
+                } else if (model.type === "artist") {
+                    pageStack.push(Qt.resolvedUrl("ArtistPage.qml"), {
+                        artistId: model.id,
+                        artistName: model.name,
+                        artistImageUrl: model.imageUrl
+                    })
+                } else if (model.type === "album") {
+                    SpotifyAPI.play(null, model.uri, null, function() {
+                        console.log("Playing album:", model.name)
+                    }, function(error) {
+                        console.error("Failed to play album:", error)
+                    })
+                } else if (model.type === "playlist") {
+                    pageStack.push(Qt.resolvedUrl("PlaylistDetailsPage.qml"), {
+                        playlistId: model.id,
+                        playlistName: model.name,
+                        playlistImageUrl: model.imageUrl
+                    })
+                }
+            }
+        }
+
+        ViewPlaceholder {
+            enabled: resultsView.count === 0 && !searching && searchField.text.length > 0
+            text: qsTr("No results")
+            hintText: qsTr("Try a different search")
+        }
+
+        ViewPlaceholder {
+            enabled: resultsView.count === 0 && !searching && searchField.text.length === 0
+            text: qsTr("Search Spotify")
+            hintText: qsTr("Enter a search term above")
+        }
+
+        VerticalScrollDecorator {}
     }
 
     function performSearch() {
@@ -173,7 +211,7 @@ Page {
                     resultsModel.append({
                         id: track.id,
                         name: track.name,
-                        subtitle: artistName + " - " + track.album.name,
+                        subtitle: artistName + " • " + track.album.name,
                         type: "track",
                         uri: track.uri,
                         imageUrl: imageUrl
@@ -190,7 +228,7 @@ Page {
                     resultsModel.append({
                         id: artist.id,
                         name: artist.name,
-                        subtitle: qsTr("Artist"),
+                        subtitle: "",
                         type: "artist",
                         uri: artist.uri,
                         imageUrl: artistImageUrl

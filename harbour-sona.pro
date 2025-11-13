@@ -14,6 +14,7 @@ DISTFILES += qml/harbour-sona.qml \
     qml/pages/PlaylistDetailsPage.qml \
     qml/pages/SearchPage.qml \
     qml/pages/PlayerPage.qml \
+    qml/pages/ArtistPage.qml \
     qml/js/SpotifyAPI.js \
     qml/config.js \
     qml/config.js.example \
