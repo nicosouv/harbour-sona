@@ -11,6 +11,7 @@ Page {
     property bool isAuthenticated: false
     property string userName: ""
     property string userEmail: ""
+    property string storedCodeVerifier: ""
 
     // Helper function to parse URL parameters
     function parseUrlParams(url) {
@@ -42,11 +43,12 @@ Page {
 
                 if (params.code) {
                     console.log("Authorization code received, exchanging for token...")
+                    console.log("Using stored code verifier")
 
                     // Exchange the code for an access token
                     SpotifyAPI.exchangeCodeForToken(
                         params.code,
-                        oauth2.codeVerifier,
+                        page.storedCodeVerifier,
                         Config.SPOTIFY_CLIENT_ID,
                         Config.SPOTIFY_CLIENT_SECRET,
                         oauth2.redirectUri,
@@ -166,6 +168,9 @@ Page {
                 visible: !isAuthenticated
                 onClicked: {
                     if (!isAuthenticated) {
+                        // Store the code verifier before opening browser
+                        page.storedCodeVerifier = oauth2.codeVerifier
+                        console.log("Stored code verifier for later use")
                         oauth2.authorizeInBrowser()
                     } else {
                         // Handle disconnect
