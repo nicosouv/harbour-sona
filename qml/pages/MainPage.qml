@@ -31,8 +31,7 @@ Page {
             "playlist-read-collaborative"
         ]
 
-        redirectListener.port: 8080
-        redirectUri: "http://127.0.0.1:8080/callback"
+        redirectUri: "harbour-sona://callback"
 
         onReceivedAuthorizationCode: {
             console.log("Received authorization code, requesting token...")
