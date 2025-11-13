@@ -4,9 +4,9 @@ import Sailfish.Silica 1.0
 ApplicationWindow
 {
     id: appWindow
-    initialPage: Component {
-        Qt.createComponent(Qt.resolvedUrl("pages/MainPage.qml")).createObject()
-    }
+
+    initialPage: Qt.createComponent(Qt.resolvedUrl("pages/MainPage.qml"))
+
     cover: Qt.resolvedUrl("cover/CoverPage.qml")
     allowedOrientations: defaultAllowedOrientations
 }
