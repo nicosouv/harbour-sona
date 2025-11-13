@@ -6,3 +6,8 @@ Name=Sona
 Icon=harbour-sona
 Exec=harbour-sona %u
 MimeType=x-scheme-handler/harbour-sona;
+
+[X-Sailjail]
+Permissions=Internet
+OrganizationName=com.github.nicosouv
+ApplicationName=harbour-sona
