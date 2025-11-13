@@ -38,6 +38,26 @@ Page {
                     source: PlaybackManager.albumImageUrl || ""
                     fillMode: Image.PreserveAspectFit
                     smooth: true
+                    opacity: status === Image.Ready ? 1.0 : 0.0
+
+                    Behavior on opacity {
+                        FadeAnimation { duration: 400 }
+                    }
+
+                    transform: Scale {
+                        id: albumScale
+                        origin.x: albumImage.width / 2
+                        origin.y: albumImage.height / 2
+                        xScale: PlaybackManager.isPlaying ? 1.0 : 0.95
+                        yScale: PlaybackManager.isPlaying ? 1.0 : 0.95
+
+                        Behavior on xScale {
+                            NumberAnimation { duration: 300; easing.type: Easing.OutQuad }
+                        }
+                        Behavior on yScale {
+                            NumberAnimation { duration: 300; easing.type: Easing.OutQuad }
+                        }
+                    }
 
                     Rectangle {
                         anchors.fill: parent

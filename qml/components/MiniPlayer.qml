@@ -8,10 +8,21 @@ BackgroundItem {
     width: parent.width
     visible: PlaybackManager.trackName !== ""
 
+    Behavior on height {
+        NumberAnimation {
+            duration: 200
+            easing.type: Easing.InOutQuad
+        }
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
         opacity: miniPlayer.highlighted ? 0.3 : 0.2
+
+        Behavior on opacity {
+            NumberAnimation { duration: 100 }
+        }
     }
 
     Row {
@@ -31,6 +42,11 @@ BackgroundItem {
             source: PlaybackManager.albumImageUrl || ""
             fillMode: Image.PreserveAspectCrop
             smooth: true
+            opacity: status === Image.Ready ? 1.0 : 0.0
+
+            Behavior on opacity {
+                FadeAnimation { duration: 300 }
+            }
 
             Rectangle {
                 anchors.fill: parent
