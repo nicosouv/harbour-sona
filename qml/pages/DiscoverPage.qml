@@ -40,87 +40,11 @@ Page {
                 visible: loading
             }
 
-            // Featured Playlists
-            Column {
-                width: parent.width
-                spacing: Theme.paddingSmall
-
-                Label {
-                    x: Theme.horizontalPageMargin
-                    text: qsTr("Featured Playlists")
-                    color: Theme.highlightColor
-                    font.pixelSize: Theme.fontSizeLarge
-                    font.bold: true
-                }
-
-                SilicaListView {
-                    id: featuredView
-                    width: parent.width
-                    height: Theme.itemSizeHuge + Theme.paddingLarge
-                    orientation: ListView.Horizontal
-                    clip: true
-
-                    model: ListModel {
-                        id: featuredModel
-                    }
-
-                    delegate: BackgroundItem {
-                        width: Theme.itemSizeHuge * 1.5
-                        height: Theme.itemSizeHuge
-
-                        Column {
-                            anchors.fill: parent
-                            anchors.margins: Theme.paddingSmall
-                            spacing: Theme.paddingSmall
-
-                            Image {
-                                width: parent.width
-                                height: parent.width
-                                source: model.imageUrl || ""
-                                fillMode: Image.PreserveAspectCrop
-                                smooth: true
-
-                                Rectangle {
-                                    anchors.fill: parent
-                                    color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
-                                    visible: !parent.source || parent.status !== Image.Ready
-
-                                    Icon {
-                                        anchors.centerIn: parent
-                                        source: "image://theme/icon-l-music"
-                                        color: Theme.secondaryColor
-                                    }
-                                }
-                            }
-
-                            Label {
-                                width: parent.width
-                                text: model.name
-                                color: Theme.primaryColor
-                                font.pixelSize: Theme.fontSizeSmall
-                                truncationMode: TruncationMode.Fade
-                                maximumLineCount: 2
-                                wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-                            }
-                        }
-
-                        onClicked: {
-                            pageStack.push(Qt.resolvedUrl("PlaylistDetailsPage.qml"), {
-                                playlistId: model.id,
-                                playlistName: model.name,
-                                playlistImageUrl: model.imageUrl
-                            })
-                        }
-                    }
-
-                    HorizontalScrollDecorator {}
-                }
-            }
-
             // New Releases
             Column {
                 width: parent.width
                 spacing: Theme.paddingSmall
+                visible: !loading
 
                 Label {
                     x: Theme.horizontalPageMargin
@@ -133,7 +57,7 @@ Page {
                 SilicaListView {
                     id: newReleasesView
                     width: parent.width
-                    height: Theme.itemSizeHuge + Theme.paddingLarge
+                    height: Theme.itemSizeHuge * 1.8
                     orientation: ListView.Horizontal
                     clip: true
 
@@ -143,7 +67,7 @@ Page {
 
                     delegate: BackgroundItem {
                         width: Theme.itemSizeHuge * 1.5
-                        height: Theme.itemSizeHuge
+                        height: parent.height
 
                         Column {
                             anchors.fill: parent
@@ -161,12 +85,6 @@ Page {
                                     anchors.fill: parent
                                     color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
                                     visible: !parent.source || parent.status !== Image.Ready
-
-                                    Icon {
-                                        anchors.centerIn: parent
-                                        source: "image://theme/icon-l-music"
-                                        color: Theme.secondaryColor
-                                    }
                                 }
                             }
 
@@ -175,8 +93,10 @@ Page {
                                 text: model.name
                                 color: Theme.primaryColor
                                 font.pixelSize: Theme.fontSizeSmall
+                                font.bold: true
                                 truncationMode: TruncationMode.Fade
-                                maximumLineCount: 1
+                                maximumLineCount: 2
+                                wrapMode: Text.WordWrap
                             }
 
                             Label {
@@ -198,10 +118,11 @@ Page {
                 }
             }
 
-            // Categories
+            // Browse Categories
             Column {
                 width: parent.width
                 spacing: Theme.paddingSmall
+                visible: !loading
 
                 Label {
                     x: Theme.horizontalPageMargin
@@ -216,6 +137,7 @@ Page {
                     x: Theme.horizontalPageMargin
                     columns: 2
                     spacing: Theme.paddingMedium
+                    rowSpacing: Theme.paddingMedium
 
                     Repeater {
                         model: ListModel {
@@ -228,76 +150,64 @@ Page {
 
                             Rectangle {
                                 anchors.fill: parent
+                                radius: Theme.paddingMedium
                                 color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
-                                radius: Theme.paddingSmall
 
                                 Image {
                                     anchors.fill: parent
                                     source: model.imageUrl || ""
                                     fillMode: Image.PreserveAspectCrop
+                                    opacity: 0.3
                                     smooth: true
-                                    opacity: 0.6
+                                }
 
-                                    Rectangle {
-                                        anchors.fill: parent
-                                        color: Theme.rgba(Theme.highlightBackgroundColor, 0.2)
-                                        visible: !parent.source || parent.status !== Image.Ready
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: Theme.paddingMedium
+                                    gradient: Gradient {
+                                        GradientStop { position: 0.0; color: "transparent" }
+                                        GradientStop { position: 1.0; color: Theme.rgba("black", 0.7) }
                                     }
                                 }
 
                                 Label {
-                                    anchors.centerIn: parent
+                                    anchors {
+                                        left: parent.left
+                                        right: parent.right
+                                        bottom: parent.bottom
+                                        margins: Theme.paddingMedium
+                                    }
                                     text: model.name
-                                    color: Theme.primaryColor
+                                    color: "white"
                                     font.pixelSize: Theme.fontSizeMedium
                                     font.bold: true
+                                    truncationMode: TruncationMode.Fade
+                                    maximumLineCount: 2
+                                    wrapMode: Text.WordWrap
                                 }
                             }
 
                             onClicked: {
                                 console.log("Category clicked:", model.id)
-                                // Could load category playlists here
+                                pageStack.push(Qt.resolvedUrl("CategoryPlaylistsPage.qml"), {
+                                    categoryId: model.id,
+                                    categoryName: model.name
+                                })
                             }
                         }
                     }
                 }
             }
+
+            Item { height: Theme.paddingLarge }
         }
 
         VerticalScrollDecorator {}
     }
 
     function loadAll() {
-        loadFeaturedPlaylists()
         loadNewReleases()
         loadCategories()
-    }
-
-    function loadFeaturedPlaylists() {
-        loading = true
-        featuredModel.clear()
-
-        SpotifyAPI.getFeaturedPlaylists(function(data) {
-            loading = false
-
-            if (data && data.playlists && data.playlists.items) {
-                for (var i = 0; i < Math.min(data.playlists.items.length, 10); i++) {
-                    var playlist = data.playlists.items[i]
-                    var imageUrl = playlist.images && playlist.images.length > 0 ?
-                                   playlist.images[0].url : ""
-
-                    featuredModel.append({
-                        id: playlist.id,
-                        name: playlist.name,
-                        imageUrl: imageUrl,
-                        uri: playlist.uri
-                    })
-                }
-            }
-        }, function(error) {
-            loading = false
-            console.error("Failed to load featured playlists:", error)
-        }, 20, 0)
     }
 
     function loadNewReleases() {
@@ -308,12 +218,12 @@ Page {
             loading = false
 
             if (data && data.albums && data.albums.items) {
-                for (var i = 0; i < Math.min(data.albums.items.length, 10); i++) {
+                console.log("New releases loaded:", data.albums.items.length)
+
+                for (var i = 0; i < Math.min(data.albums.items.length, 20); i++) {
                     var album = data.albums.items[i]
-                    var imageUrl = album.images && album.images.length > 0 ?
-                                   album.images[0].url : ""
-                    var artist = album.artists && album.artists.length > 0 ?
-                                 album.artists[0].name : ""
+                    var imageUrl = album.images && album.images.length > 0 ? album.images[0].url : ""
+                    var artist = album.artists && album.artists.length > 0 ? album.artists[0].name : ""
 
                     newReleasesModel.append({
                         id: album.id,
@@ -331,17 +241,15 @@ Page {
     }
 
     function loadCategories() {
-        loading = true
         categoriesModel.clear()
 
         SpotifyAPI.getCategories(function(data) {
-            loading = false
-
             if (data && data.categories && data.categories.items) {
+                console.log("Categories loaded:", data.categories.items.length)
+
                 for (var i = 0; i < Math.min(data.categories.items.length, 10); i++) {
                     var category = data.categories.items[i]
-                    var imageUrl = category.icons && category.icons.length > 0 ?
-                                   category.icons[0].url : ""
+                    var imageUrl = category.icons && category.icons.length > 0 ? category.icons[0].url : ""
 
                     categoriesModel.append({
                         id: category.id,
@@ -351,7 +259,6 @@ Page {
                 }
             }
         }, function(error) {
-            loading = false
             console.error("Failed to load categories:", error)
         }, 20, 0)
     }

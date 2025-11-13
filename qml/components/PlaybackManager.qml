@@ -102,12 +102,19 @@ QtObject {
         })
     }
 
+    // Timer for delayed refresh
+    property var _delayedRefreshTimer: Timer {
+        interval: 500
+        repeat: false
+        onTriggered: playbackManager.refreshPlayback()
+    }
+
     // Playback control functions
     function play(deviceId, contextUri, uris, callback, errorCallback) {
         SpotifyAPI.play(deviceId, contextUri, uris, function() {
             isPlaying = true
             playbackStateChanged()
-            Qt.callLater(refreshPlayback)
+            _delayedRefreshTimer.restart()
             if (callback) callback()
         }, function(error) {
             console.error("PlaybackManager: Failed to play:", error)
@@ -128,7 +135,7 @@ QtObject {
 
     function next(deviceId, callback, errorCallback) {
         SpotifyAPI.next(deviceId, function() {
-            Qt.callLater(refreshPlayback)
+            _delayedRefreshTimer.restart()
             if (callback) callback()
         }, function(error) {
             console.error("PlaybackManager: Failed to skip to next:", error)
@@ -138,7 +145,7 @@ QtObject {
 
     function previous(deviceId, callback, errorCallback) {
         SpotifyAPI.previous(deviceId, function() {
-            Qt.callLater(refreshPlayback)
+            _delayedRefreshTimer.restart()
             if (callback) callback()
         }, function(error) {
             console.error("PlaybackManager: Failed to skip to previous:", error)
