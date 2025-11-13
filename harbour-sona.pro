@@ -2,6 +2,8 @@ TARGET = harbour-sona
 
 CONFIG += sailfishapp
 
+PKGCONFIG += amberwebauthorization
+
 SOURCES += src/harbour-sona.cpp
 
 DISTFILES += qml/harbour-sona.qml \
@@ -19,7 +21,3 @@ DISTFILES += qml/harbour-sona.qml \
     harbour-sona.desktop
 
 SAILFISHAPP_ICONS = 86x86 108x108 128x128 172x172
-
-# Amber Web Authorization for OAuth2
-CONFIG += link_pkgconfig
-PKGCONFIG += amberwebauthorization
