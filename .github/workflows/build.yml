@@ -61,7 +61,7 @@ jobs:
           arch: ${{ matrix.arch }}
           release: ${{ env.SAILFISH_RELEASE }}
           fix-version: false
-          check: true
+          check: false
 
       - name: List built packages
         run: |

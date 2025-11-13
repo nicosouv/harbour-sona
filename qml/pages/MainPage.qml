@@ -32,7 +32,7 @@ Page {
         ]
 
         redirectListener.port: 8080
-        redirectUri: "harbour-sona://callback"
+        redirectUri: "http://127.0.0.1:8080/callback"
 
         onReceivedAuthorizationCode: {
             console.log("Received authorization code, requesting token...")
