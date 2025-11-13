@@ -20,7 +20,7 @@ Page {
         PullDownMenu {
             MenuItem {
                 text: qsTr("Refresh")
-                onClicked: loadAll()
+                onClicked: loadNewReleases()
             }
         }
 
@@ -118,96 +118,11 @@ Page {
                 }
             }
 
-            // Browse Categories
-            Column {
-                width: parent.width
-                spacing: Theme.paddingSmall
-                visible: !loading
-
-                Label {
-                    x: Theme.horizontalPageMargin
-                    text: qsTr("Browse Categories")
-                    color: Theme.highlightColor
-                    font.pixelSize: Theme.fontSizeLarge
-                    font.bold: true
-                }
-
-                Grid {
-                    width: parent.width - Theme.horizontalPageMargin * 2
-                    x: Theme.horizontalPageMargin
-                    columns: 2
-                    spacing: Theme.paddingMedium
-                    rowSpacing: Theme.paddingMedium
-
-                    Repeater {
-                        model: ListModel {
-                            id: categoriesModel
-                        }
-
-                        BackgroundItem {
-                            width: (parent.width - Theme.paddingMedium) / 2
-                            height: Theme.itemSizeHuge
-
-                            Rectangle {
-                                anchors.fill: parent
-                                radius: Theme.paddingMedium
-                                color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
-
-                                Image {
-                                    anchors.fill: parent
-                                    source: model.imageUrl || ""
-                                    fillMode: Image.PreserveAspectCrop
-                                    opacity: 0.3
-                                    smooth: true
-                                }
-
-                                Rectangle {
-                                    anchors.fill: parent
-                                    radius: Theme.paddingMedium
-                                    gradient: Gradient {
-                                        GradientStop { position: 0.0; color: "transparent" }
-                                        GradientStop { position: 1.0; color: Theme.rgba("black", 0.7) }
-                                    }
-                                }
-
-                                Label {
-                                    anchors {
-                                        left: parent.left
-                                        right: parent.right
-                                        bottom: parent.bottom
-                                        margins: Theme.paddingMedium
-                                    }
-                                    text: model.name
-                                    color: "white"
-                                    font.pixelSize: Theme.fontSizeMedium
-                                    font.bold: true
-                                    truncationMode: TruncationMode.Fade
-                                    maximumLineCount: 2
-                                    wrapMode: Text.WordWrap
-                                }
-                            }
-
-                            onClicked: {
-                                console.log("Category clicked:", model.id)
-                                pageStack.push(Qt.resolvedUrl("CategoryPlaylistsPage.qml"), {
-                                    categoryId: model.id,
-                                    categoryName: model.name
-                                })
-                            }
-                        }
-                    }
-                }
-            }
 
             Item { height: Theme.paddingLarge }
         }
 
         VerticalScrollDecorator {}
-    }
-
-    function loadAll() {
-        loadNewReleases()
-        loadCategories()
     }
 
     function loadNewReleases() {
@@ -240,31 +155,8 @@ Page {
         }, 20, 0)
     }
 
-    function loadCategories() {
-        categoriesModel.clear()
-
-        SpotifyAPI.getCategories(function(data) {
-            if (data && data.categories && data.categories.items) {
-                console.log("Categories loaded:", data.categories.items.length)
-
-                for (var i = 0; i < Math.min(data.categories.items.length, 10); i++) {
-                    var category = data.categories.items[i]
-                    var imageUrl = category.icons && category.icons.length > 0 ? category.icons[0].url : ""
-
-                    categoriesModel.append({
-                        id: category.id,
-                        name: category.name,
-                        imageUrl: imageUrl
-                    })
-                }
-            }
-        }, function(error) {
-            console.error("Failed to load categories:", error)
-        }, 20, 0)
-    }
-
     Component.onCompleted: {
-        loadAll()
+        loadNewReleases()
     }
 
     MiniPlayer {
