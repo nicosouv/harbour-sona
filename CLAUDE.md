@@ -1,0 +1,3 @@
+- j'ai changé le nom de l'app en Sona, du coup la redirect-url sera: harbour-sona://callback
+- commit, tag doivent etre en anglais, de manière hyper concise, pas d'emoji.
+- quand tu git tags, utilise le plus possible le patch en semver. Et meme n'hesite pas a écraser le dernier tag connu si tu penses que c'est le mieux

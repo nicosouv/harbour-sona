@@ -224,3 +224,48 @@ function removeSavedTracks(trackIds, callback, errorCallback) {
     }
     request("/me/tracks", callback, errorCallback, "DELETE", data)
 }
+
+// Exchange authorization code for access token (PKCE)
+function exchangeCodeForToken(code, codeVerifier, clientId, clientSecret, redirectUri, callback, errorCallback) {
+    var xhr = new XMLHttpRequest()
+    var url = "https://accounts.spotify.com/api/token"
+
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    var response = JSON.parse(xhr.responseText)
+                    if (callback) callback(response)
+                } catch (e) {
+                    console.error("Failed to parse token response:", e)
+                    if (errorCallback) errorCallback("Parse error: " + e)
+                }
+            } else {
+                console.error("Token exchange failed:", xhr.status, xhr.statusText, xhr.responseText)
+                if (errorCallback) {
+                    try {
+                        var error = JSON.parse(xhr.responseText)
+                        errorCallback(error.error_description || error.error || xhr.statusText)
+                    } catch (e) {
+                        errorCallback(xhr.statusText)
+                    }
+                }
+            }
+        }
+    }
+
+    xhr.open("POST", url, true)
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded")
+
+    var params = "grant_type=authorization_code"
+    params += "&code=" + encodeURIComponent(code)
+    params += "&redirect_uri=" + encodeURIComponent(redirectUri)
+    params += "&client_id=" + encodeURIComponent(clientId)
+    params += "&code_verifier=" + encodeURIComponent(codeVerifier)
+
+    if (clientSecret) {
+        params += "&client_secret=" + encodeURIComponent(clientSecret)
+    }
+
+    xhr.send(params)
+}

@@ -12,13 +12,68 @@ Page {
     property string userName: ""
     property string userEmail: ""
 
+    // Helper function to parse URL parameters
+    function parseUrlParams(url) {
+        var params = {}
+        var queryStart = url.indexOf('?')
+        if (queryStart === -1) return params
+
+        var queryString = url.substring(queryStart + 1)
+        var pairs = queryString.split('&')
+
+        for (var i = 0; i < pairs.length; i++) {
+            var pair = pairs[i].split('=')
+            if (pair.length === 2) {
+                params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1])
+            }
+        }
+        return params
+    }
+
     Component.onCompleted: {
         // Check if app was launched with a callback URL
         if (typeof commandLineArguments !== 'undefined' && commandLineArguments.length > 1) {
             var callbackUrl = commandLineArguments[1]
             console.log("Received callback URL:", callbackUrl)
+
             if (callbackUrl.indexOf("harbour-sona://callback") === 0) {
-                oauth2.handleAuthorizationUrl(callbackUrl)
+                // Parse the authorization code from the callback URL
+                var params = parseUrlParams(callbackUrl)
+
+                if (params.code) {
+                    console.log("Authorization code received, exchanging for token...")
+
+                    // Exchange the code for an access token
+                    SpotifyAPI.exchangeCodeForToken(
+                        params.code,
+                        oauth2.codeVerifier,
+                        Config.SPOTIFY_CLIENT_ID,
+                        Config.SPOTIFY_CLIENT_SECRET,
+                        oauth2.redirectUri,
+                        function(tokenResponse) {
+                            console.log("Access token received!")
+                            page.accessToken = tokenResponse.access_token
+                            page.isAuthenticated = true
+
+                            // Set token in API client
+                            SpotifyAPI.setAccessToken(tokenResponse.access_token)
+
+                            // Get user profile
+                            SpotifyAPI.getUserProfile(function(profile) {
+                                console.log("User profile:", profile.display_name)
+                                page.userName = profile.display_name || profile.id
+                                page.userEmail = profile.email || ""
+                            }, function(error) {
+                                console.error("Failed to get user profile:", error)
+                            })
+                        },
+                        function(error) {
+                            console.error("Token exchange failed:", error)
+                        }
+                    )
+                } else if (params.error) {
+                    console.error("OAuth error:", params.error, params.error_description || "")
+                }
             }
         }
     }
