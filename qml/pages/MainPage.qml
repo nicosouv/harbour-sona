@@ -4,6 +4,7 @@ import Amber.Web.Authorization 1.0
 import QtQuick.LocalStorage 2.0
 import "../config.js" as Config
 import "../js/SpotifyAPI.js" as SpotifyAPI
+import "../components" 1.0
 
 Page {
     id: page
@@ -14,12 +15,12 @@ Page {
     property string userEmail: ""
 
     // Helper to get/set persistent data using LocalStorage
-    function getCodeVerifier() {
+    function getStoredValue(key) {
         var db = LocalStorage.openDatabaseSync("SonaOAuth", "1.0", "OAuth state storage", 1000000)
         var value = ""
         db.transaction(function(tx) {
             tx.executeSql('CREATE TABLE IF NOT EXISTS oauth(key TEXT PRIMARY KEY, value TEXT)')
-            var rs = tx.executeSql('SELECT value FROM oauth WHERE key=?', ['codeVerifier'])
+            var rs = tx.executeSql('SELECT value FROM oauth WHERE key=?', [key])
             if (rs.rows.length > 0) {
                 value = rs.rows.item(0).value
             }
@@ -27,20 +28,24 @@ Page {
         return value
     }
 
-    function setCodeVerifier(value) {
+    function setStoredValue(key, value) {
         var db = LocalStorage.openDatabaseSync("SonaOAuth", "1.0", "OAuth state storage", 1000000)
         db.transaction(function(tx) {
             tx.executeSql('CREATE TABLE IF NOT EXISTS oauth(key TEXT PRIMARY KEY, value TEXT)')
-            tx.executeSql('INSERT OR REPLACE INTO oauth(key, value) VALUES(?, ?)', ['codeVerifier', value])
+            tx.executeSql('INSERT OR REPLACE INTO oauth(key, value) VALUES(?, ?)', [key, value])
         })
     }
 
-    function clearCodeVerifier() {
+    function clearStoredValue(key) {
         var db = LocalStorage.openDatabaseSync("SonaOAuth", "1.0", "OAuth state storage", 1000000)
         db.transaction(function(tx) {
-            tx.executeSql('DELETE FROM oauth WHERE key=?', ['codeVerifier'])
+            tx.executeSql('DELETE FROM oauth WHERE key=?', [key])
         })
     }
+
+    function getCodeVerifier() { return getStoredValue('codeVerifier') }
+    function setCodeVerifier(value) { setStoredValue('codeVerifier', value) }
+    function clearCodeVerifier() { clearStoredValue('codeVerifier') }
 
     // Helper function to parse URL parameters
     function parseUrlParams(url) {
@@ -61,6 +66,28 @@ Page {
     }
 
     Component.onCompleted: {
+        // Try to load saved token first
+        var savedToken = getStoredValue('accessToken')
+        if (savedToken) {
+            console.log("Found saved token, attempting to use it")
+            page.accessToken = savedToken
+            page.isAuthenticated = true
+            SpotifyAPI.setAccessToken(savedToken)
+
+            // Load user profile
+            SpotifyAPI.getUserProfile(function(profile) {
+                console.log("User profile loaded:", profile.display_name)
+                page.userName = profile.display_name || profile.id
+                page.userEmail = profile.email || ""
+            }, function(error) {
+                console.error("Saved token invalid, clearing:", error)
+                // Token expired or invalid, clear it
+                clearStoredValue('accessToken')
+                page.accessToken = ""
+                page.isAuthenticated = false
+            })
+        }
+
         // Check if app was launched with a callback URL
         if (typeof commandLineArguments !== 'undefined' && commandLineArguments.length > 1) {
             var callbackUrl = commandLineArguments[1]
@@ -87,6 +114,9 @@ Page {
                             page.accessToken = tokenResponse.access_token
                             page.isAuthenticated = true
 
+                            // Save token for next time
+                            setStoredValue('accessToken', tokenResponse.access_token)
+
                             // Clear the stored code verifier (security best practice)
                             clearCodeVerifier()
 
@@ -98,6 +128,9 @@ Page {
                                 console.log("User profile:", profile.display_name)
                                 page.userName = profile.display_name || profile.id
                                 page.userEmail = profile.email || ""
+                                // Save user info
+                                setStoredValue('userName', page.userName)
+                                setStoredValue('userEmail', page.userEmail)
                             }, function(error) {
                                 console.error("Failed to get user profile:", error)
                             })
@@ -182,7 +215,12 @@ Page {
     }
 
     SilicaFlickable {
-        anchors.fill: parent
+        anchors {
+            top: parent.top
+            left: parent.left
+            right: parent.right
+            bottom: miniPlayer.top
+        }
 
         PullDownMenu {
             MenuItem {
@@ -278,6 +316,15 @@ Page {
                     }
                 }
             }
+        }
+    }
+
+    MiniPlayer {
+        id: miniPlayer
+        anchors {
+            left: parent.left
+            right: parent.right
+            bottom: parent.bottom
         }
     }
 }

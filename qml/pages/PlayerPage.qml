@@ -1,28 +1,9 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
-import "../js/SpotifyAPI.js" as SpotifyAPI
+import "../components" 1.0
 
 Page {
     id: page
-
-    property bool isPlaying: false
-    property bool loading: false
-    property string trackName: ""
-    property string artistName: ""
-    property string albumName: ""
-    property string albumImageUrl: ""
-    property int progressMs: 0
-    property int durationMs: 0
-    property bool shuffle: false
-    property string repeatMode: "off"
-
-    Timer {
-        id: refreshTimer
-        interval: 2000
-        repeat: true
-        running: page.status === PageStatus.Active
-        onTriggered: loadCurrentPlayback()
-    }
 
     SilicaFlickable {
         anchors.fill: parent
@@ -31,7 +12,7 @@ Page {
         PullDownMenu {
             MenuItem {
                 text: qsTr("Refresh")
-                onClicked: loadCurrentPlayback()
+                onClicked: PlaybackManager.refreshPlayback()
             }
         }
 
@@ -54,7 +35,7 @@ Page {
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: Math.min(parent.width - Theme.horizontalPageMargin * 4, Screen.width * 0.7)
                     height: width
-                    source: albumImageUrl || ""
+                    source: PlaybackManager.albumImageUrl || ""
                     fillMode: Image.PreserveAspectFit
                     smooth: true
 
@@ -91,7 +72,7 @@ Page {
                 BusyIndicator {
                     size: BusyIndicatorSize.Large
                     anchors.centerIn: albumImage
-                    running: loading
+                    running: PlaybackManager.loading
                 }
             }
 
@@ -103,7 +84,7 @@ Page {
                 Label {
                     x: Theme.horizontalPageMargin
                     width: parent.width - 2 * Theme.horizontalPageMargin
-                    text: trackName || qsTr("No track playing")
+                    text: PlaybackManager.trackName || qsTr("No track playing")
                     color: Theme.highlightColor
                     font.pixelSize: Theme.fontSizeLarge
                     font.bold: true
@@ -115,25 +96,25 @@ Page {
                 Label {
                     x: Theme.horizontalPageMargin
                     width: parent.width - 2 * Theme.horizontalPageMargin
-                    text: artistName || ""
+                    text: PlaybackManager.artistName || ""
                     color: Theme.primaryColor
                     font.pixelSize: Theme.fontSizeMedium
                     wrapMode: Text.WordWrap
                     maximumLineCount: 1
                     horizontalAlignment: Text.AlignHCenter
-                    visible: artistName !== ""
+                    visible: PlaybackManager.artistName !== ""
                 }
 
                 Label {
                     x: Theme.horizontalPageMargin
                     width: parent.width - 2 * Theme.horizontalPageMargin
-                    text: albumName || ""
+                    text: PlaybackManager.albumName || ""
                     color: Theme.secondaryColor
                     font.pixelSize: Theme.fontSizeSmall
                     wrapMode: Text.WordWrap
                     maximumLineCount: 1
                     horizontalAlignment: Text.AlignHCenter
-                    visible: albumName !== ""
+                    visible: PlaybackManager.albumName !== ""
                 }
             }
 
@@ -146,9 +127,9 @@ Page {
                     id: progressSlider
                     width: parent.width
                     minimumValue: 0
-                    maximumValue: durationMs
-                    value: progressMs
-                    enabled: durationMs > 0
+                    maximumValue: PlaybackManager.durationMs
+                    value: PlaybackManager.progressMs
+                    enabled: PlaybackManager.durationMs > 0
                     handleVisible: false
 
                     background: Rectangle {
@@ -160,7 +141,7 @@ Page {
                         color: Theme.rgba(Theme.highlightColor, 0.2)
 
                         Rectangle {
-                            width: parent.width * (progressMs / Math.max(durationMs, 1))
+                            width: parent.width * (PlaybackManager.progressMs / Math.max(PlaybackManager.durationMs, 1))
                             height: parent.height
                             radius: height / 2
                             color: Theme.highlightColor
@@ -173,7 +154,7 @@ Page {
                     x: Theme.horizontalPageMargin
 
                     Label {
-                        text: formatTime(progressMs)
+                        text: formatTime(PlaybackManager.progressMs)
                         font.pixelSize: Theme.fontSizeExtraSmall
                         color: Theme.secondaryColor
                     }
@@ -181,7 +162,7 @@ Page {
                     Item { width: parent.width - Theme.fontSizeExtraSmall * 10 }
 
                     Label {
-                        text: formatTime(durationMs)
+                        text: formatTime(PlaybackManager.durationMs)
                         font.pixelSize: Theme.fontSizeExtraSmall
                         color: Theme.secondaryColor
                     }
@@ -195,13 +176,10 @@ Page {
 
                 IconButton {
                     icon.source: "image://theme/icon-m-shuffle"
-                    icon.color: shuffle ? Theme.highlightColor : Theme.primaryColor
+                    icon.color: PlaybackManager.shuffle ? Theme.highlightColor : Theme.primaryColor
                     onClicked: {
-                        SpotifyAPI.setShuffle(!shuffle, null, function() {
+                        PlaybackManager.toggleShuffle(null, function() {
                             console.log("Shuffle toggled")
-                            shuffle = !shuffle
-                        }, function(error) {
-                            console.error("Failed to toggle shuffle:", error)
                         })
                     }
                 }
@@ -209,17 +187,14 @@ Page {
                 IconButton {
                     icon.source: "image://theme/icon-m-previous"
                     onClicked: {
-                        SpotifyAPI.previous(null, function() {
+                        PlaybackManager.previous(null, function() {
                             console.log("Previous track")
-                            Qt.callLater(loadCurrentPlayback)
-                        }, function(error) {
-                            console.error("Failed to skip to previous:", error)
                         })
                     }
                 }
 
                 IconButton {
-                    icon.source: isPlaying ? "image://theme/icon-l-pause" : "image://theme/icon-l-play"
+                    icon.source: PlaybackManager.isPlaying ? "image://theme/icon-l-pause" : "image://theme/icon-l-play"
                     icon.width: Theme.iconSizeExtraLarge
                     icon.height: Theme.iconSizeExtraLarge
 
@@ -233,57 +208,37 @@ Page {
                     }
 
                     onClicked: {
-                        if (isPlaying) {
-                            SpotifyAPI.pause(null, function() {
-                                console.log("Paused")
-                                isPlaying = false
-                            }, function(error) {
-                                console.error("Failed to pause:", error)
-                            })
-                        } else {
-                            SpotifyAPI.play(null, null, null, function() {
-                                console.log("Playing")
-                                isPlaying = true
-                            }, function(error) {
-                                console.error("Failed to play:", error)
-                            })
-                        }
+                        PlaybackManager.togglePlayback(function() {
+                            console.log("Playback toggled")
+                        })
                     }
                 }
 
                 IconButton {
                     icon.source: "image://theme/icon-m-next"
                     onClicked: {
-                        SpotifyAPI.next(null, function() {
+                        PlaybackManager.next(null, function() {
                             console.log("Next track")
-                            Qt.callLater(loadCurrentPlayback)
-                        }, function(error) {
-                            console.error("Failed to skip to next:", error)
                         })
                     }
                 }
 
                 IconButton {
                     icon.source: "image://theme/icon-m-repeat"
-                    icon.color: repeatMode !== "off" ? Theme.highlightColor : Theme.primaryColor
+                    icon.color: PlaybackManager.repeatMode !== "off" ? Theme.highlightColor : Theme.primaryColor
 
                     Label {
                         anchors.centerIn: parent
-                        text: repeatMode === "track" ? "1" : ""
+                        text: PlaybackManager.repeatMode === "track" ? "1" : ""
                         font.pixelSize: Theme.fontSizeExtraSmall
                         font.bold: true
                         color: Theme.highlightColor
-                        visible: repeatMode === "track"
+                        visible: PlaybackManager.repeatMode === "track"
                     }
 
                     onClicked: {
-                        var newMode = repeatMode === "off" ? "context" :
-                                      repeatMode === "context" ? "track" : "off"
-                        SpotifyAPI.setRepeat(newMode, null, function() {
-                            console.log("Repeat mode:", newMode)
-                            repeatMode = newMode
-                        }, function(error) {
-                            console.error("Failed to set repeat mode:", error)
+                        PlaybackManager.cycleRepeat(null, function() {
+                            console.log("Repeat mode:", PlaybackManager.repeatMode)
                         })
                     }
                 }
@@ -310,44 +265,5 @@ Page {
         var minutes = Math.floor(seconds / 60)
         seconds = seconds % 60
         return minutes + ":" + (seconds < 10 ? "0" : "") + seconds
-    }
-
-    function loadCurrentPlayback() {
-        loading = true
-
-        SpotifyAPI.getCurrentPlayback(function(data) {
-            loading = false
-
-            if (data && data.item) {
-                trackName = data.item.name
-                artistName = data.item.artists && data.item.artists.length > 0 ?
-                             data.item.artists[0].name : ""
-                albumName = data.item.album ? data.item.album.name : ""
-                albumImageUrl = data.item.album && data.item.album.images &&
-                                data.item.album.images.length > 0 ?
-                                data.item.album.images[0].url : ""
-                isPlaying = data.is_playing
-                progressMs = data.progress_ms || 0
-                durationMs = data.item.duration_ms || 0
-                shuffle = data.shuffle_state || false
-                repeatMode = data.repeat_state || "off"
-            } else {
-                console.log("No active playback")
-                trackName = ""
-                artistName = ""
-                albumName = ""
-                albumImageUrl = ""
-                isPlaying = false
-                progressMs = 0
-                durationMs = 0
-            }
-        }, function(error) {
-            loading = false
-            console.error("Failed to get current playback:", error)
-        })
-    }
-
-    Component.onCompleted: {
-        loadCurrentPlayback()
     }
 }

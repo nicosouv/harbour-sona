@@ -1,6 +1,7 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import "../js/SpotifyAPI.js" as SpotifyAPI
+import "../components" 1.0
 
 Page {
     id: page
@@ -9,7 +10,12 @@ Page {
 
     SilicaListView {
         id: listView
-        anchors.fill: parent
+        anchors {
+            top: parent.top
+            left: parent.left
+            right: parent.right
+            bottom: miniPlayer.top
+        }
 
         header: PageHeader {
             title: qsTr("My Playlists")
@@ -124,5 +130,14 @@ Page {
 
     Component.onCompleted: {
         loadPlaylists()
+    }
+
+    MiniPlayer {
+        id: miniPlayer
+        anchors {
+            left: parent.left
+            right: parent.right
+            bottom: parent.bottom
+        }
     }
 }

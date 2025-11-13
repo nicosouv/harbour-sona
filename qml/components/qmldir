@@ -1,0 +1,2 @@
+singleton PlaybackManager 1.0 PlaybackManager.qml
+MiniPlayer 1.0 MiniPlayer.qml

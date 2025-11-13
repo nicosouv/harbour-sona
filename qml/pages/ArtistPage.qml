@@ -1,6 +1,7 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import "../js/SpotifyAPI.js" as SpotifyAPI
+import "../components" 1.0
 
 Page {
     id: page
@@ -10,7 +11,12 @@ Page {
     property string artistImageUrl: ""
 
     SilicaFlickable {
-        anchors.fill: parent
+        anchors {
+            top: parent.top
+            left: parent.left
+            right: parent.right
+            bottom: miniPlayer.top
+        }
         contentHeight: column.height
 
         Column {
@@ -94,5 +100,14 @@ Page {
         }
 
         VerticalScrollDecorator {}
+    }
+
+    MiniPlayer {
+        id: miniPlayer
+        anchors {
+            left: parent.left
+            right: parent.right
+            bottom: parent.bottom
+        }
     }
 }
