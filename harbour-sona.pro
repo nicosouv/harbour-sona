@@ -16,6 +16,7 @@ DISTFILES += qml/harbour-sona.qml \
     qml/pages/PlayerPage.qml \
     qml/js/SpotifyAPI.js \
     qml/config.js \
+    qml/config.js.example \
     rpm/harbour-sona.changes \
     rpm/harbour-sona.spec \
     harbour-sona.desktop

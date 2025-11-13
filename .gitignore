@@ -53,6 +53,5 @@ compile_commands.json
 
 *_qmlcache.qrc
 
-# Spotify credentials
-config.js
+# Spotify credentials (but keep placeholder in repo)
 spotify-config.json
