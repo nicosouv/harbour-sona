@@ -41,7 +41,6 @@ jobs:
       - name: Update version in spec file
         run: |
           sed -i "s/^Version:.*/Version:    ${{ steps.version.outputs.version }}/" rpm/harbour-sona.spec
-          sed -i "s/^Version:.*/Version:    ${{ steps.version.outputs.version }}/" rpm/harbour-sona.yaml
 
       - name: Create config.js with secrets
         run: |

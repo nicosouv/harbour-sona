@@ -16,7 +16,6 @@ DISTFILES += qml/harbour-sona.qml \
     qml/config.js \
     rpm/harbour-sona.changes \
     rpm/harbour-sona.spec \
-    rpm/harbour-sona.yaml \
     harbour-sona.desktop
 
 SAILFISHAPP_ICONS = 86x86 108x108 128x128 172x172
