@@ -14,6 +14,10 @@ Page {
                 text: qsTr("Refresh")
                 onClicked: PlaybackManager.refreshPlayback()
             }
+            MenuItem {
+                text: qsTr("Select Device")
+                onClicked: pageStack.push(Qt.resolvedUrl("DevicesPage.qml"))
+            }
         }
 
         Column {
