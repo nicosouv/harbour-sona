@@ -28,9 +28,9 @@ Features:
 %setup -q -n %{name}-%{version}
 
 %build
-%qtc_qmake5
+%qmake5 harbour-sona.pro
 
-%qtc_make %{?_smp_mflags}
+make %{?_smp_mflags}
 
 %install
 rm -rf %{buildroot}
