@@ -17,6 +17,7 @@ DISTFILES += qml/harbour-sona.qml \
     qml/pages/ArtistPage.qml \
     qml/pages/LibraryPage.qml \
     qml/pages/DiscoverPage.qml \
+    qml/pages/AlbumDetailsPage.qml \
     qml/components/PlaybackManager.qml \
     qml/components/MiniPlayer.qml \
     qml/components/TrackContextMenu.qml \
