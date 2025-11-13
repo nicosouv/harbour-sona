@@ -351,6 +351,7 @@ Page {
                 columns: 2
                 spacing: Theme.paddingMedium
                 visible: isAuthenticated
+                rowSpacing: Theme.paddingMedium
 
                 // Discover card
                 BackgroundItem {
@@ -554,6 +555,108 @@ Page {
                     }
 
                     onClicked: pageStack.push(Qt.resolvedUrl("PlaylistsPage.qml"))
+                }
+
+                // Stats card
+                BackgroundItem {
+                    width: parent.width / 2 - Theme.paddingMedium / 2
+                    height: width * 1.2
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Theme.paddingMedium
+                        color: Theme.rgba(Theme.highlightBackgroundColor, 0.15)
+                        opacity: parent.down ? 0.6 : 1.0
+
+                        Behavior on opacity {
+                            NumberAnimation { duration: 100 }
+                        }
+
+                        Column {
+                            anchors {
+                                left: parent.left
+                                right: parent.right
+                                bottom: parent.bottom
+                                margins: Theme.paddingMedium
+                            }
+                            spacing: Theme.paddingSmall
+
+                            Icon {
+                                source: "image://theme/icon-m-health"
+                                color: Theme.highlightColor
+                                width: Theme.iconSizeLarge
+                                height: Theme.iconSizeLarge
+                            }
+
+                            Label {
+                                text: qsTr("Stats")
+                                color: Theme.primaryColor
+                                font.pixelSize: Theme.fontSizeLarge
+                                font.bold: true
+                            }
+
+                            Label {
+                                width: parent.width
+                                text: qsTr("Your listening stats")
+                                color: Theme.secondaryColor
+                                font.pixelSize: Theme.fontSizeExtraSmall
+                                wrapMode: Text.WordWrap
+                            }
+                        }
+                    }
+
+                    onClicked: pageStack.push(Qt.resolvedUrl("StatsPage.qml"))
+                }
+
+                // Now Playing card
+                BackgroundItem {
+                    width: parent.width / 2 - Theme.paddingMedium / 2
+                    height: width * 1.2
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Theme.paddingMedium
+                        color: Theme.rgba(Theme.highlightBackgroundColor, 0.15)
+                        opacity: parent.down ? 0.6 : 1.0
+
+                        Behavior on opacity {
+                            NumberAnimation { duration: 100 }
+                        }
+
+                        Column {
+                            anchors {
+                                left: parent.left
+                                right: parent.right
+                                bottom: parent.bottom
+                                margins: Theme.paddingMedium
+                            }
+                            spacing: Theme.paddingSmall
+
+                            Icon {
+                                source: "image://theme/icon-m-play"
+                                color: Theme.highlightColor
+                                width: Theme.iconSizeLarge
+                                height: Theme.iconSizeLarge
+                            }
+
+                            Label {
+                                text: qsTr("Player")
+                                color: Theme.primaryColor
+                                font.pixelSize: Theme.fontSizeLarge
+                                font.bold: true
+                            }
+
+                            Label {
+                                width: parent.width
+                                text: qsTr("Now playing")
+                                color: Theme.secondaryColor
+                                font.pixelSize: Theme.fontSizeExtraSmall
+                                wrapMode: Text.WordWrap
+                            }
+                        }
+                    }
+
+                    onClicked: pageStack.push(Qt.resolvedUrl("PlayerPage.qml"))
                 }
             }
 
