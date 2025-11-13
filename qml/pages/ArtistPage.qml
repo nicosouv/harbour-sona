@@ -9,6 +9,8 @@ Page {
     property string artistId: ""
     property string artistName: ""
     property string artistImageUrl: ""
+    property bool loading: false
+    property bool isFollowing: false
 
     SilicaFlickable {
         anchors {
@@ -19,6 +21,13 @@ Page {
         }
         contentHeight: column.height
 
+        PullDownMenu {
+            MenuItem {
+                text: qsTr("Refresh")
+                onClicked: loadAllData()
+            }
+        }
+
         Column {
             id: column
             width: parent.width
@@ -28,78 +37,454 @@ Page {
                 title: artistName
             }
 
-            Image {
-                id: artistImage
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: Math.min(parent.width - Theme.horizontalPageMargin * 2, Screen.width * 0.6)
-                height: width
-                source: artistImageUrl || ""
-                fillMode: Image.PreserveAspectCrop
-                smooth: true
+            // Artist header
+            Column {
+                width: parent.width
+                spacing: Theme.paddingMedium
 
-                Rectangle {
-                    anchors.fill: parent
-                    color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
-                    visible: !artistImage.source || artistImage.status !== Image.Ready
-                    radius: width / 2
+                Image {
+                    id: artistImage
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: Math.min(parent.width - Theme.horizontalPageMargin * 2, Screen.width * 0.5)
+                    height: width
+                    source: artistImageUrl || ""
+                    fillMode: Image.PreserveAspectCrop
+                    smooth: true
 
-                    Icon {
-                        anchors.centerIn: parent
-                        source: "image://theme/icon-l-contact"
-                        color: Theme.secondaryColor
-                        width: Theme.iconSizeExtraLarge
-                        height: Theme.iconSizeExtraLarge
+                    Rectangle {
+                        anchors.fill: parent
+                        color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
+                        visible: !artistImage.source || artistImage.status !== Image.Ready
+                        radius: width / 2
+
+                        Icon {
+                            anchors.centerIn: parent
+                            source: "image://theme/icon-l-contact"
+                            color: Theme.secondaryColor
+                            width: Theme.iconSizeExtraLarge
+                            height: Theme.iconSizeExtraLarge
+                        }
+                    }
+
+                    layer.enabled: true
+                    layer.effect: ShaderEffect {
+                        property variant source: artistImage
+                        fragmentShader: "
+                            varying highp vec2 qt_TexCoord0;
+                            uniform sampler2D source;
+                            uniform lowp float qt_Opacity;
+                            void main() {
+                                highp vec2 center = vec2(0.5, 0.5);
+                                highp float dist = distance(qt_TexCoord0, center);
+                                if (dist > 0.5) {
+                                    gl_FragColor = vec4(0.0);
+                                } else {
+                                    lowp vec4 color = texture2D(source, qt_TexCoord0);
+                                    gl_FragColor = color * qt_Opacity;
+                                }
+                            }
+                        "
                     }
                 }
 
-                layer.enabled: true
-                layer.effect: ShaderEffect {
-                    property variant source: artistImage
-                    fragmentShader: "
-                        varying highp vec2 qt_TexCoord0;
-                        uniform sampler2D source;
-                        uniform lowp float qt_Opacity;
-                        void main() {
-                            highp vec2 center = vec2(0.5, 0.5);
-                            highp float dist = distance(qt_TexCoord0, center);
-                            if (dist > 0.5) {
-                                gl_FragColor = vec4(0.0);
+                Row {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: Theme.paddingMedium
+
+                    Button {
+                        text: qsTr("Play Artist")
+                        onClicked: {
+                            var artistUri = "spotify:artist:" + artistId
+                            PlaybackManager.play(null, artistUri, null, function() {
+                                console.log("Playing artist radio")
+                            })
+                        }
+                    }
+
+                    Button {
+                        text: isFollowing ? qsTr("Unfollow") : qsTr("Follow")
+                        onClicked: {
+                            if (isFollowing) {
+                                SpotifyAPI.unfollowArtist(artistId, function() {
+                                    console.log("Unfollowed artist")
+                                    isFollowing = false
+                                })
                             } else {
-                                lowp vec4 color = texture2D(source, qt_TexCoord0);
-                                gl_FragColor = color * qt_Opacity;
+                                SpotifyAPI.followArtist(artistId, function() {
+                                    console.log("Followed artist")
+                                    isFollowing = true
+                                })
                             }
                         }
-                    "
+                    }
                 }
             }
 
-            Button {
+            BusyIndicator {
+                size: BusyIndicatorSize.Large
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: qsTr("Play Artist Radio")
-                onClicked: {
-                    // Play artist radio by using their URI
-                    var artistUri = "spotify:artist:" + artistId
-                    SpotifyAPI.play(null, artistUri, null, function() {
-                        console.log("Playing artist radio")
-                        pageStack.pop()
-                    }, function(error) {
-                        console.error("Failed to play artist radio:", error)
-                    })
+                running: loading
+                visible: loading
+            }
+
+            // Top Tracks
+            Column {
+                width: parent.width
+                spacing: Theme.paddingSmall
+
+                Label {
+                    x: Theme.horizontalPageMargin
+                    text: qsTr("Popular")
+                    color: Theme.highlightColor
+                    font.pixelSize: Theme.fontSizeLarge
+                    font.bold: true
+                }
+
+                Repeater {
+                    model: ListModel {
+                        id: topTracksModel
+                    }
+
+                    ListItem {
+                        contentHeight: Theme.itemSizeMedium
+
+                        Row {
+                            anchors.fill: parent
+                            anchors.margins: Theme.paddingMedium
+                            spacing: Theme.paddingMedium
+
+                            Label {
+                                width: Theme.paddingLarge * 2
+                                text: (index + 1).toString()
+                                color: Theme.secondaryColor
+                                font.pixelSize: Theme.fontSizeLarge
+                                horizontalAlignment: Text.AlignHCenter
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+
+                            Image {
+                                id: trackImage
+                                width: height
+                                height: parent.height - Theme.paddingSmall
+                                source: model.imageUrl || ""
+                                fillMode: Image.PreserveAspectCrop
+                                smooth: true
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
+                                    visible: !trackImage.source || trackImage.status !== Image.Ready
+
+                                    Icon {
+                                        anchors.centerIn: parent
+                                        source: "image://theme/icon-m-music"
+                                        color: Theme.secondaryColor
+                                    }
+                                }
+                            }
+
+                            Column {
+                                width: parent.width - Theme.paddingLarge * 2 - trackImage.width - parent.spacing * 2
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: Theme.paddingSmall / 2
+
+                                Label {
+                                    width: parent.width
+                                    text: model.name
+                                    color: Theme.primaryColor
+                                    font.pixelSize: Theme.fontSizeSmall
+                                    truncationMode: TruncationMode.Fade
+                                    maximumLineCount: 1
+                                }
+
+                                Label {
+                                    width: parent.width
+                                    text: model.album
+                                    color: Theme.secondaryColor
+                                    font.pixelSize: Theme.fontSizeExtraSmall
+                                    truncationMode: TruncationMode.Fade
+                                    maximumLineCount: 1
+                                }
+                            }
+                        }
+
+                        onClicked: {
+                            PlaybackManager.play(null, null, [model.uri])
+                        }
+                    }
                 }
             }
 
-            Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                text: qsTr("Artist page - more features coming soon!")
-                color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeSmall
-                wrapMode: Text.WordWrap
-                horizontalAlignment: Text.AlignHCenter
+            // Albums
+            Column {
+                width: parent.width
+                spacing: Theme.paddingSmall
+
+                Label {
+                    x: Theme.horizontalPageMargin
+                    text: qsTr("Albums")
+                    color: Theme.highlightColor
+                    font.pixelSize: Theme.fontSizeLarge
+                    font.bold: true
+                }
+
+                SilicaListView {
+                    width: parent.width
+                    height: Math.min(Theme.itemSizeLarge * 3, albumsModel.count * Theme.itemSizeLarge)
+                    clip: true
+
+                    model: ListModel {
+                        id: albumsModel
+                    }
+
+                    delegate: ListItem {
+                        contentHeight: Theme.itemSizeLarge
+
+                        Row {
+                            anchors.fill: parent
+                            anchors.margins: Theme.paddingMedium
+                            spacing: Theme.paddingMedium
+
+                            Image {
+                                id: albumImage
+                                width: height
+                                height: parent.height
+                                source: model.imageUrl || ""
+                                fillMode: Image.PreserveAspectCrop
+                                smooth: true
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
+                                    visible: !albumImage.source || albumImage.status !== Image.Ready
+
+                                    Icon {
+                                        anchors.centerIn: parent
+                                        source: "image://theme/icon-l-music"
+                                        color: Theme.secondaryColor
+                                    }
+                                }
+                            }
+
+                            Column {
+                                width: parent.width - albumImage.width - parent.spacing
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: Theme.paddingSmall / 2
+
+                                Label {
+                                    width: parent.width
+                                    text: model.name
+                                    color: Theme.primaryColor
+                                    font.pixelSize: Theme.fontSizeMedium
+                                    truncationMode: TruncationMode.Fade
+                                    maximumLineCount: 1
+                                }
+
+                                Label {
+                                    width: parent.width
+                                    text: model.releaseDate
+                                    color: Theme.secondaryColor
+                                    font.pixelSize: Theme.fontSizeSmall
+                                }
+                            }
+                        }
+
+                        onClicked: {
+                            PlaybackManager.play(null, model.uri, null)
+                        }
+                    }
+                }
+            }
+
+            // Related Artists
+            Column {
+                width: parent.width
+                spacing: Theme.paddingSmall
+
+                Label {
+                    x: Theme.horizontalPageMargin
+                    text: qsTr("Related Artists")
+                    color: Theme.highlightColor
+                    font.pixelSize: Theme.fontSizeLarge
+                    font.bold: true
+                }
+
+                SilicaListView {
+                    width: parent.width
+                    height: Theme.itemSizeMedium + Theme.paddingLarge
+                    orientation: ListView.Horizontal
+                    clip: true
+
+                    model: ListModel {
+                        id: relatedModel
+                    }
+
+                    delegate: BackgroundItem {
+                        width: Theme.itemSizeHuge * 1.2
+                        height: parent.height
+
+                        Column {
+                            anchors.fill: parent
+                            anchors.margins: Theme.paddingSmall
+                            spacing: Theme.paddingSmall
+
+                            Image {
+                                width: parent.width
+                                height: width
+                                source: model.imageUrl || ""
+                                fillMode: Image.PreserveAspectCrop
+                                smooth: true
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
+                                    visible: !parent.source || parent.status !== Image.Ready
+                                    radius: width / 2
+
+                                    Icon {
+                                        anchors.centerIn: parent
+                                        source: "image://theme/icon-m-contact"
+                                        color: Theme.secondaryColor
+                                    }
+                                }
+
+                                layer.enabled: true
+                                layer.effect: ShaderEffect {
+                                    property variant source: parent
+                                    fragmentShader: "
+                                        varying highp vec2 qt_TexCoord0;
+                                        uniform sampler2D source;
+                                        uniform lowp float qt_Opacity;
+                                        void main() {
+                                            highp vec2 center = vec2(0.5, 0.5);
+                                            highp float dist = distance(qt_TexCoord0, center);
+                                            if (dist > 0.5) {
+                                                gl_FragColor = vec4(0.0);
+                                            } else {
+                                                lowp vec4 color = texture2D(source, qt_TexCoord0);
+                                                gl_FragColor = color * qt_Opacity;
+                                            }
+                                        }
+                                    "
+                                }
+                            }
+
+                            Label {
+                                width: parent.width
+                                text: model.name
+                                color: Theme.primaryColor
+                                font.pixelSize: Theme.fontSizeExtraSmall
+                                truncationMode: TruncationMode.Fade
+                                maximumLineCount: 1
+                                horizontalAlignment: Text.AlignHCenter
+                            }
+                        }
+
+                        onClicked: {
+                            pageStack.replace(Qt.resolvedUrl("ArtistPage.qml"), {
+                                artistId: model.id,
+                                artistName: model.name,
+                                artistImageUrl: model.imageUrl
+                            })
+                        }
+                    }
+
+                    HorizontalScrollDecorator {}
+                }
             }
         }
 
         VerticalScrollDecorator {}
+    }
+
+    function loadAllData() {
+        loadTopTracks()
+        loadAlbums()
+        loadRelatedArtists()
+    }
+
+    function loadTopTracks() {
+        loading = true
+        topTracksModel.clear()
+
+        SpotifyAPI.getArtistTopTracks(artistId, "US", function(data) {
+            loading = false
+
+            if (data && data.tracks) {
+                for (var i = 0; i < Math.min(data.tracks.length, 5); i++) {
+                    var track = data.tracks[i]
+                    var imageUrl = track.album && track.album.images && track.album.images.length > 0 ?
+                                   track.album.images[track.album.images.length - 1].url : ""
+
+                    topTracksModel.append({
+                        id: track.id,
+                        name: track.name,
+                        album: track.album ? track.album.name : "",
+                        uri: track.uri,
+                        imageUrl: imageUrl
+                    })
+                }
+            }
+        }, function(error) {
+            loading = false
+            console.error("Failed to load top tracks:", error)
+        })
+    }
+
+    function loadAlbums() {
+        loading = true
+        albumsModel.clear()
+
+        SpotifyAPI.getArtistAlbums(artistId, function(data) {
+            loading = false
+
+            if (data && data.items) {
+                for (var i = 0; i < Math.min(data.items.length, 10); i++) {
+                    var album = data.items[i]
+                    var imageUrl = album.images && album.images.length > 0 ? album.images[0].url : ""
+
+                    albumsModel.append({
+                        id: album.id,
+                        name: album.name,
+                        releaseDate: album.release_date || "",
+                        uri: album.uri,
+                        imageUrl: imageUrl
+                    })
+                }
+            }
+        }, function(error) {
+            loading = false
+            console.error("Failed to load albums:", error)
+        }, 20, 0)
+    }
+
+    function loadRelatedArtists() {
+        loading = true
+        relatedModel.clear()
+
+        SpotifyAPI.getRelatedArtists(artistId, function(data) {
+            loading = false
+
+            if (data && data.artists) {
+                for (var i = 0; i < Math.min(data.artists.length, 10); i++) {
+                    var artist = data.artists[i]
+                    var imageUrl = artist.images && artist.images.length > 0 ? artist.images[0].url : ""
+
+                    relatedModel.append({
+                        id: artist.id,
+                        name: artist.name,
+                        imageUrl: imageUrl
+                    })
+                }
+            }
+        }, function(error) {
+            loading = false
+            console.error("Failed to load related artists:", error)
+        })
+    }
+
+    Component.onCompleted: {
+        loadAllData()
     }
 
     MiniPlayer {
