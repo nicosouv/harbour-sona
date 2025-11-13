@@ -1,6 +1,7 @@
 [Desktop Entry]
 Type=Application
 X-Nemo-Application-Type=silica-qt5
+X-Nemo-Single-Instance=true
 Name=Sona
 Icon=harbour-sona
 Exec=harbour-sona %u
