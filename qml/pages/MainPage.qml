@@ -55,8 +55,8 @@ Page {
             })
         }
 
-        onError: {
-            console.log("OAuth2 error: " + error)
+        onErrorOccurred: {
+            console.log("OAuth2 error occurred:", error)
         }
     }
 
