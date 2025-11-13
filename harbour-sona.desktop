@@ -4,4 +4,3 @@ X-Nemo-Application-Type=silica-qt5
 Name=Sona
 Icon=harbour-sona
 Exec=harbour-sona
-MimeType=x-scheme-handler/harbour-sona;
