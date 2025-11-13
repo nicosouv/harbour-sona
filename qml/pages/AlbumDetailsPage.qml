@@ -150,7 +150,7 @@ Page {
                 trackId: model.id
                 trackName: model.name
                 trackUri: model.uri
-                trackArtist: model.artist
+                artistName: model.artist
             }
         }
 
