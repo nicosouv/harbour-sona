@@ -289,6 +289,18 @@ Page {
 
                 Button {
                     anchors.horizontalCenter: parent.horizontalCenter
+                    text: qsTr("Discover")
+                    onClicked: pageStack.push(Qt.resolvedUrl("DiscoverPage.qml"))
+                }
+
+                Button {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: qsTr("Library")
+                    onClicked: pageStack.push(Qt.resolvedUrl("LibraryPage.qml"))
+                }
+
+                Button {
+                    anchors.horizontalCenter: parent.horizontalCenter
                     text: qsTr("My Playlists")
                     onClicked: pageStack.push(Qt.resolvedUrl("PlaylistsPage.qml"))
                 }
