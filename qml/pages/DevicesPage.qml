@@ -12,6 +12,13 @@ Page {
         id: devicesModel
     }
 
+    Timer {
+        id: reloadTimer
+        interval: 500
+        repeat: false
+        onTriggered: loadDevices()
+    }
+
     SilicaFlickable {
         anchors {
             top: parent.top
@@ -139,7 +146,7 @@ Page {
                                     id: volumeIcon
                                     source: model.volumePercent === 0 ?
                                            "image://theme/icon-s-alarm" :
-                                           "image://theme/icon-s-high-volume"
+                                           "image://theme/icon-m-speaker"
                                     color: Theme.secondaryColor
                                     width: Theme.iconSizeExtraSmall
                                     height: Theme.iconSizeExtraSmall
@@ -180,9 +187,7 @@ Page {
                             SpotifyAPI.transferPlayback(model.id, true, function() {
                                 console.log("Transferred playback to:", model.name)
                                 // Reload devices to update active status
-                                Qt.callLater(function() {
-                                    loadDevices()
-                                })
+                                reloadTimer.restart()
                             }, function(error) {
                                 loading = false
                                 console.error("Failed to transfer playback:", error)
