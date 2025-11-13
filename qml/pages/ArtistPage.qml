@@ -290,7 +290,13 @@ Page {
                         }
 
                         onClicked: {
-                            PlaybackManager.play(null, model.uri, null)
+                            pageStack.push(Qt.resolvedUrl("AlbumDetailsPage.qml"), {
+                                albumId: model.id,
+                                albumName: model.name,
+                                albumArtist: artistName,
+                                albumImageUrl: model.imageUrl,
+                                albumUri: model.uri
+                            })
                         }
                     }
                 }

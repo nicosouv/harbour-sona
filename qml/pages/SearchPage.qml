@@ -165,10 +165,12 @@ Page {
                         artistImageUrl: model.imageUrl
                     })
                 } else if (model.type === "album") {
-                    SpotifyAPI.play(null, model.uri, null, function() {
-                        console.log("Playing album:", model.name)
-                    }, function(error) {
-                        console.error("Failed to play album:", error)
+                    pageStack.push(Qt.resolvedUrl("AlbumDetailsPage.qml"), {
+                        albumId: model.id,
+                        albumName: model.name,
+                        albumArtist: model.subtitle,
+                        albumImageUrl: model.imageUrl,
+                        albumUri: model.uri
                     })
                 } else if (model.type === "playlist") {
                     pageStack.push(Qt.resolvedUrl("PlaylistDetailsPage.qml"), {
