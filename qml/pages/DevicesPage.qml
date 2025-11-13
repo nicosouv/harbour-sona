@@ -64,7 +64,7 @@ Page {
 
                 delegate: BackgroundItem {
                     id: deviceItem
-                    height: Theme.itemSizeLarge
+                    height: Theme.itemSizeExtraLarge
 
                     Rectangle {
                         anchors.fill: parent
