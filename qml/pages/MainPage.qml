@@ -1,6 +1,7 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import Amber.Web.Authorization 1.0
+import Qt.labs.settings 1.0
 import "../config.js" as Config
 import "../js/SpotifyAPI.js" as SpotifyAPI
 
@@ -11,7 +12,12 @@ Page {
     property bool isAuthenticated: false
     property string userName: ""
     property string userEmail: ""
-    property string storedCodeVerifier: ""
+
+    // Persistent storage for OAuth state
+    Settings {
+        id: oauthSettings
+        property string codeVerifier: ""
+    }
 
     // Helper function to parse URL parameters
     function parseUrlParams(url) {
@@ -43,12 +49,12 @@ Page {
 
                 if (params.code) {
                     console.log("Authorization code received, exchanging for token...")
-                    console.log("Using stored code verifier")
+                    console.log("Using stored code verifier:", oauthSettings.codeVerifier.substring(0, 10) + "...")
 
                     // Exchange the code for an access token
                     SpotifyAPI.exchangeCodeForToken(
                         params.code,
-                        page.storedCodeVerifier,
+                        oauthSettings.codeVerifier,
                         Config.SPOTIFY_CLIENT_ID,
                         Config.SPOTIFY_CLIENT_SECRET,
                         oauth2.redirectUri,
@@ -56,6 +62,9 @@ Page {
                             console.log("Access token received!")
                             page.accessToken = tokenResponse.access_token
                             page.isAuthenticated = true
+
+                            // Clear the stored code verifier (security best practice)
+                            oauthSettings.codeVerifier = ""
 
                             // Set token in API client
                             SpotifyAPI.setAccessToken(tokenResponse.access_token)
@@ -169,8 +178,8 @@ Page {
                 onClicked: {
                     if (!isAuthenticated) {
                         // Store the code verifier before opening browser
-                        page.storedCodeVerifier = oauth2.codeVerifier
-                        console.log("Stored code verifier for later use")
+                        oauthSettings.codeVerifier = oauth2.codeVerifier
+                        console.log("Stored code verifier for later use:", oauthSettings.codeVerifier.substring(0, 10) + "...")
                         oauth2.authorizeInBrowser()
                     } else {
                         // Handle disconnect
