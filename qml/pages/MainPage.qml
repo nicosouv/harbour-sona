@@ -12,6 +12,17 @@ Page {
     property string userName: ""
     property string userEmail: ""
 
+    Component.onCompleted: {
+        // Check if app was launched with a callback URL
+        if (typeof commandLineArguments !== 'undefined' && commandLineArguments.length > 1) {
+            var callbackUrl = commandLineArguments[1]
+            console.log("Received callback URL:", callbackUrl)
+            if (callbackUrl.indexOf("harbour-sona://callback") === 0) {
+                oauth2.handleAuthorizationUrl(callbackUrl)
+            }
+        }
+    }
+
     OAuth2AcPkce {
         id: oauth2
 
@@ -31,8 +42,7 @@ Page {
             "playlist-read-collaborative"
         ]
 
-        redirectListener.port: 8080
-        redirectUri: "http://127.0.0.1:8080"
+        redirectUri: "harbour-sona://callback"
 
         onReceivedAuthorizationCode: {
             console.log("Received authorization code, requesting token...")
