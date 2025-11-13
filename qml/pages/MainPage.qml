@@ -227,6 +227,17 @@ Page {
                 text: qsTr("About")
                 onClicked: pageStack.push(Qt.resolvedUrl("AboutPage.qml"))
             }
+            MenuItem {
+                text: qsTr("Disconnect")
+                visible: isAuthenticated
+                onClicked: {
+                    page.accessToken = ""
+                    page.isAuthenticated = false
+                    page.userName = ""
+                    page.userEmail = ""
+                    clearStoredValue('accessToken')
+                }
+            }
         }
 
         contentHeight: column.height
@@ -240,94 +251,398 @@ Page {
                 title: qsTr("Sona")
             }
 
-            Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                wrapMode: Text.WordWrap
-                text: isAuthenticated ?
-                    qsTr("Welcome, %1").arg(userName || "User") :
-                    qsTr("Welcome to Sona - Spotify client for Sailfish OS")
-                color: Theme.secondaryHighlightColor
-                font.pixelSize: Theme.fontSizeExtraLarge
-            }
+            // Welcome message
+            Item {
+                width: parent.width
+                height: welcomeColumn.height + Theme.paddingLarge * 2
 
-            Button {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: isAuthenticated ?
-                    qsTr("Disconnect") :
-                    qsTr("Connect to Spotify")
-                visible: !isAuthenticated
-                onClicked: {
-                    if (!isAuthenticated) {
-                        // Store the code verifier before opening browser
-                        setCodeVerifier(oauth2.codeVerifier)
-                        console.log("Stored code verifier for later use:", oauth2.codeVerifier.substring(0, 10) + "...")
-                        oauth2.authorizeInBrowser()
-                    } else {
-                        // Handle disconnect
-                        page.accessToken = ""
-                        page.isAuthenticated = false
+                Column {
+                    id: welcomeColumn
+                    width: parent.width - Theme.horizontalPageMargin * 2
+                    x: Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: Theme.paddingSmall
+
+                    Label {
+                        width: parent.width
+                        text: {
+                            var hour = new Date().getHours()
+                            if (hour < 12) return qsTr("Good morning")
+                            else if (hour < 18) return qsTr("Good afternoon")
+                            else return qsTr("Good evening")
+                        }
+                        color: Theme.highlightColor
+                        font.pixelSize: Theme.fontSizeHuge
+                        font.bold: true
+                        visible: isAuthenticated
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: userName || qsTr("User")
+                        color: Theme.primaryColor
+                        font.pixelSize: Theme.fontSizeLarge
+                        visible: isAuthenticated && userName !== ""
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: qsTr("Welcome to Sona - Your Spotify remote control")
+                        color: Theme.secondaryColor
+                        font.pixelSize: Theme.fontSizeMedium
+                        visible: !isAuthenticated
                     }
                 }
             }
 
-            Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                wrapMode: Text.WordWrap
-                text: qsTr("Tap 'Connect to Spotify' to authenticate with your account.")
-                color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeSmall
+            // Login button for non-authenticated users
+            BackgroundItem {
+                width: parent.width - Theme.horizontalPageMargin * 2
+                height: Theme.itemSizeHuge
+                anchors.horizontalCenter: parent.horizontalCenter
                 visible: !isAuthenticated
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: Theme.paddingSmall
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: "#1DB954" }
+                        GradientStop { position: 1.0; color: "#1AA34A" }
+                    }
+                    opacity: parent.down ? 0.8 : 1.0
+
+                    Behavior on opacity {
+                        NumberAnimation { duration: 100 }
+                    }
+                }
+
+                Column {
+                    anchors.centerIn: parent
+                    spacing: Theme.paddingSmall
+
+                    Icon {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        source: "image://theme/icon-l-developer-mode"
+                        color: "white"
+                        width: Theme.iconSizeLarge
+                        height: Theme.iconSizeLarge
+                    }
+
+                    Label {
+                        text: qsTr("Connect to Spotify")
+                        color: "white"
+                        font.pixelSize: Theme.fontSizeLarge
+                        font.bold: true
+                    }
+                }
+
+                onClicked: {
+                    setCodeVerifier(oauth2.codeVerifier)
+                    console.log("Stored code verifier for later use:", oauth2.codeVerifier.substring(0, 10) + "...")
+                    oauth2.authorizeInBrowser()
+                }
             }
 
-            // Navigation buttons
-            Column {
-                width: parent.width
+            // Navigation grid
+            Grid {
+                width: parent.width - Theme.horizontalPageMargin * 2
+                x: Theme.horizontalPageMargin
+                columns: 2
                 spacing: Theme.paddingMedium
                 visible: isAuthenticated
 
-                Button {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: qsTr("Discover")
+                // Discover card
+                BackgroundItem {
+                    width: parent.width / 2 - Theme.paddingMedium / 2
+                    height: width * 1.2
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Theme.paddingMedium
+                        color: Theme.rgba(Theme.highlightBackgroundColor, 0.15)
+                        opacity: parent.down ? 0.6 : 1.0
+
+                        Behavior on opacity {
+                            NumberAnimation { duration: 100 }
+                        }
+
+                        Column {
+                            anchors {
+                                left: parent.left
+                                right: parent.right
+                                bottom: parent.bottom
+                                margins: Theme.paddingMedium
+                            }
+                            spacing: Theme.paddingSmall
+
+                            Icon {
+                                source: "image://theme/icon-l-browser"
+                                color: Theme.highlightColor
+                                width: Theme.iconSizeLarge
+                                height: Theme.iconSizeLarge
+                            }
+
+                            Label {
+                                text: qsTr("Discover")
+                                color: Theme.primaryColor
+                                font.pixelSize: Theme.fontSizeLarge
+                                font.bold: true
+                            }
+
+                            Label {
+                                width: parent.width
+                                text: qsTr("Featured music")
+                                color: Theme.secondaryColor
+                                font.pixelSize: Theme.fontSizeExtraSmall
+                                wrapMode: Text.WordWrap
+                            }
+                        }
+                    }
+
                     onClicked: pageStack.push(Qt.resolvedUrl("DiscoverPage.qml"))
                 }
 
-                Button {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: qsTr("Library")
-                    onClicked: pageStack.push(Qt.resolvedUrl("LibraryPage.qml"))
-                }
+                // Search card
+                BackgroundItem {
+                    width: parent.width / 2 - Theme.paddingMedium / 2
+                    height: width * 1.2
 
-                Button {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: qsTr("My Playlists")
-                    onClicked: pageStack.push(Qt.resolvedUrl("PlaylistsPage.qml"))
-                }
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Theme.paddingMedium
+                        color: Theme.rgba(Theme.highlightBackgroundColor, 0.15)
+                        opacity: parent.down ? 0.6 : 1.0
 
-                Button {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: qsTr("Now Playing")
-                    onClicked: pageStack.push(Qt.resolvedUrl("PlayerPage.qml"))
-                }
+                        Behavior on opacity {
+                            NumberAnimation { duration: 100 }
+                        }
 
-                Button {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: qsTr("Search")
+                        Column {
+                            anchors {
+                                left: parent.left
+                                right: parent.right
+                                bottom: parent.bottom
+                                margins: Theme.paddingMedium
+                            }
+                            spacing: Theme.paddingSmall
+
+                            Icon {
+                                source: "image://theme/icon-l-search"
+                                color: Theme.highlightColor
+                                width: Theme.iconSizeLarge
+                                height: Theme.iconSizeLarge
+                            }
+
+                            Label {
+                                text: qsTr("Search")
+                                color: Theme.primaryColor
+                                font.pixelSize: Theme.fontSizeLarge
+                                font.bold: true
+                            }
+
+                            Label {
+                                width: parent.width
+                                text: qsTr("Find anything")
+                                color: Theme.secondaryColor
+                                font.pixelSize: Theme.fontSizeExtraSmall
+                                wrapMode: Text.WordWrap
+                            }
+                        }
+                    }
+
                     onClicked: pageStack.push(Qt.resolvedUrl("SearchPage.qml"))
                 }
 
-                Button {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: qsTr("Disconnect")
-                    onClicked: {
-                        page.accessToken = ""
-                        page.isAuthenticated = false
-                        page.userName = ""
-                        page.userEmail = ""
+                // Library card
+                BackgroundItem {
+                    width: parent.width / 2 - Theme.paddingMedium / 2
+                    height: width * 1.2
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Theme.paddingMedium
+                        color: Theme.rgba(Theme.highlightBackgroundColor, 0.15)
+                        opacity: parent.down ? 0.6 : 1.0
+
+                        Behavior on opacity {
+                            NumberAnimation { duration: 100 }
+                        }
+
+                        Column {
+                            anchors {
+                                left: parent.left
+                                right: parent.right
+                                bottom: parent.bottom
+                                margins: Theme.paddingMedium
+                            }
+                            spacing: Theme.paddingSmall
+
+                            Icon {
+                                source: "image://theme/icon-l-music"
+                                color: Theme.highlightColor
+                                width: Theme.iconSizeLarge
+                                height: Theme.iconSizeLarge
+                            }
+
+                            Label {
+                                text: qsTr("Library")
+                                color: Theme.primaryColor
+                                font.pixelSize: Theme.fontSizeLarge
+                                font.bold: true
+                            }
+
+                            Label {
+                                width: parent.width
+                                text: qsTr("Your collection")
+                                color: Theme.secondaryColor
+                                font.pixelSize: Theme.fontSizeExtraSmall
+                                wrapMode: Text.WordWrap
+                            }
+                        }
                     }
+
+                    onClicked: pageStack.push(Qt.resolvedUrl("LibraryPage.qml"))
+                }
+
+                // Playlists card
+                BackgroundItem {
+                    width: parent.width / 2 - Theme.paddingMedium / 2
+                    height: width * 1.2
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Theme.paddingMedium
+                        color: Theme.rgba(Theme.highlightBackgroundColor, 0.15)
+                        opacity: parent.down ? 0.6 : 1.0
+
+                        Behavior on opacity {
+                            NumberAnimation { duration: 100 }
+                        }
+
+                        Column {
+                            anchors {
+                                left: parent.left
+                                right: parent.right
+                                bottom: parent.bottom
+                                margins: Theme.paddingMedium
+                            }
+                            spacing: Theme.paddingSmall
+
+                            Icon {
+                                source: "image://theme/icon-l-playlist"
+                                color: Theme.highlightColor
+                                width: Theme.iconSizeLarge
+                                height: Theme.iconSizeLarge
+                            }
+
+                            Label {
+                                text: qsTr("Playlists")
+                                color: Theme.primaryColor
+                                font.pixelSize: Theme.fontSizeLarge
+                                font.bold: true
+                            }
+
+                            Label {
+                                width: parent.width
+                                text: qsTr("Your playlists")
+                                color: Theme.secondaryColor
+                                font.pixelSize: Theme.fontSizeExtraSmall
+                                wrapMode: Text.WordWrap
+                            }
+                        }
+                    }
+
+                    onClicked: pageStack.push(Qt.resolvedUrl("PlaylistsPage.qml"))
                 }
             }
+
+            // Now Playing quick access
+            BackgroundItem {
+                width: parent.width - Theme.horizontalPageMargin * 2
+                height: Theme.itemSizeLarge
+                anchors.horizontalCenter: parent.horizontalCenter
+                visible: isAuthenticated && PlaybackManager.trackName !== ""
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: Theme.paddingMedium
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: Theme.rgba(Theme.highlightColor, 0.3) }
+                        GradientStop { position: 1.0; color: Theme.rgba(Theme.highlightColor, 0.15) }
+                    }
+                    opacity: parent.down ? 0.6 : 1.0
+
+                    Behavior on opacity {
+                        NumberAnimation { duration: 100 }
+                    }
+                }
+
+                Row {
+                    anchors {
+                        fill: parent
+                        margins: Theme.paddingMedium
+                    }
+                    spacing: Theme.paddingMedium
+
+                    Image {
+                        width: height
+                        height: parent.height
+                        source: PlaybackManager.albumImageUrl || ""
+                        fillMode: Image.PreserveAspectCrop
+                        smooth: true
+
+                        Rectangle {
+                            anchors.fill: parent
+                            color: Theme.rgba(Theme.highlightBackgroundColor, 0.2)
+                            visible: !parent.source || parent.status !== Image.Ready
+                            radius: Theme.paddingSmall / 2
+
+                            Icon {
+                                anchors.centerIn: parent
+                                source: "image://theme/icon-l-music"
+                                color: Theme.secondaryColor
+                            }
+                        }
+                    }
+
+                    Column {
+                        width: parent.width - parent.height - parent.spacing
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: Theme.paddingSmall / 2
+
+                        Label {
+                            width: parent.width
+                            text: qsTr("Now Playing")
+                            color: Theme.secondaryColor
+                            font.pixelSize: Theme.fontSizeExtraSmall
+                        }
+
+                        Label {
+                            width: parent.width
+                            text: PlaybackManager.trackName
+                            color: Theme.primaryColor
+                            font.pixelSize: Theme.fontSizeMedium
+                            font.bold: true
+                            truncationMode: TruncationMode.Fade
+                            maximumLineCount: 1
+                        }
+
+                        Label {
+                            width: parent.width
+                            text: PlaybackManager.artistName
+                            color: Theme.secondaryColor
+                            font.pixelSize: Theme.fontSizeSmall
+                            truncationMode: TruncationMode.Fade
+                            maximumLineCount: 1
+                        }
+                    }
+                }
+
+                onClicked: pageStack.push(Qt.resolvedUrl("PlayerPage.qml"))
+            }
+
+            Item { height: Theme.paddingLarge }
         }
     }
 
