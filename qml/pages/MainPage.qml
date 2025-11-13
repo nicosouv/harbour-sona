@@ -1,7 +1,7 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import Amber.Web.Authorization 1.0
-import Qt.labs.settings 1.0
+import QtQuick.LocalStorage 2.0
 import "../config.js" as Config
 import "../js/SpotifyAPI.js" as SpotifyAPI
 
@@ -13,10 +13,33 @@ Page {
     property string userName: ""
     property string userEmail: ""
 
-    // Persistent storage for OAuth state
-    Settings {
-        id: oauthSettings
-        property string codeVerifier: ""
+    // Helper to get/set persistent data using LocalStorage
+    function getCodeVerifier() {
+        var db = LocalStorage.openDatabaseSync("SonaOAuth", "1.0", "OAuth state storage", 1000000)
+        var value = ""
+        db.transaction(function(tx) {
+            tx.executeSql('CREATE TABLE IF NOT EXISTS oauth(key TEXT PRIMARY KEY, value TEXT)')
+            var rs = tx.executeSql('SELECT value FROM oauth WHERE key=?', ['codeVerifier'])
+            if (rs.rows.length > 0) {
+                value = rs.rows.item(0).value
+            }
+        })
+        return value
+    }
+
+    function setCodeVerifier(value) {
+        var db = LocalStorage.openDatabaseSync("SonaOAuth", "1.0", "OAuth state storage", 1000000)
+        db.transaction(function(tx) {
+            tx.executeSql('CREATE TABLE IF NOT EXISTS oauth(key TEXT PRIMARY KEY, value TEXT)')
+            tx.executeSql('INSERT OR REPLACE INTO oauth(key, value) VALUES(?, ?)', ['codeVerifier', value])
+        })
+    }
+
+    function clearCodeVerifier() {
+        var db = LocalStorage.openDatabaseSync("SonaOAuth", "1.0", "OAuth state storage", 1000000)
+        db.transaction(function(tx) {
+            tx.executeSql('DELETE FROM oauth WHERE key=?', ['codeVerifier'])
+        })
     }
 
     // Helper function to parse URL parameters
@@ -49,12 +72,13 @@ Page {
 
                 if (params.code) {
                     console.log("Authorization code received, exchanging for token...")
-                    console.log("Using stored code verifier:", oauthSettings.codeVerifier.substring(0, 10) + "...")
+                    var storedVerifier = getCodeVerifier()
+                    console.log("Using stored code verifier:", storedVerifier.substring(0, 10) + "...")
 
                     // Exchange the code for an access token
                     SpotifyAPI.exchangeCodeForToken(
                         params.code,
-                        oauthSettings.codeVerifier,
+                        storedVerifier,
                         Config.SPOTIFY_CLIENT_ID,
                         Config.SPOTIFY_CLIENT_SECRET,
                         oauth2.redirectUri,
@@ -64,7 +88,7 @@ Page {
                             page.isAuthenticated = true
 
                             // Clear the stored code verifier (security best practice)
-                            oauthSettings.codeVerifier = ""
+                            clearCodeVerifier()
 
                             // Set token in API client
                             SpotifyAPI.setAccessToken(tokenResponse.access_token)
@@ -178,8 +202,8 @@ Page {
                 onClicked: {
                     if (!isAuthenticated) {
                         // Store the code verifier before opening browser
-                        oauthSettings.codeVerifier = oauth2.codeVerifier
-                        console.log("Stored code verifier for later use:", oauthSettings.codeVerifier.substring(0, 10) + "...")
+                        setCodeVerifier(oauth2.codeVerifier)
+                        console.log("Stored code verifier for later use:", oauth2.codeVerifier.substring(0, 10) + "...")
                         oauth2.authorizeInBrowser()
                     } else {
                         // Handle disconnect
