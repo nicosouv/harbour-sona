@@ -143,19 +143,13 @@ Page {
                 width: parent.width
                 spacing: Theme.paddingSmall
 
-                Slider {
-                    id: progressSlider
+                Item {
                     width: parent.width
-                    minimumValue: 0
-                    maximumValue: PlaybackManager.durationMs
-                    value: PlaybackManager.progressMs
-                    enabled: PlaybackManager.durationMs > 0
-                    handleVisible: false
+                    height: Theme.paddingMedium
 
-                    background: Rectangle {
-                        anchors.verticalCenter: parent.verticalCenter
-                        x: progressSlider.leftMargin
-                        width: progressSlider.width - progressSlider.leftMargin - progressSlider.rightMargin
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: parent.width - Theme.horizontalPageMargin * 2
                         height: Theme.paddingSmall / 2
                         radius: height / 2
                         color: Theme.rgba(Theme.highlightColor, 0.2)
@@ -165,6 +159,10 @@ Page {
                             height: parent.height
                             radius: height / 2
                             color: Theme.highlightColor
+
+                            Behavior on width {
+                                NumberAnimation { duration: 200 }
+                            }
                         }
                     }
                 }

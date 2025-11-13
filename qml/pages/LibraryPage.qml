@@ -9,6 +9,19 @@ Page {
     property int currentTab: 0  // 0=Tracks, 1=Albums, 2=Shows
     property bool loading: false
 
+    // Models defined at page level so they can be accessed by functions
+    ListModel {
+        id: tracksModel
+    }
+
+    ListModel {
+        id: albumsModel
+    }
+
+    ListModel {
+        id: showsModel
+    }
+
     SilicaFlickable {
         anchors {
             top: parent.top
@@ -162,9 +175,7 @@ Page {
                     height: Screen.height - column.y - Theme.itemSizeSmall * 2 - miniPlayer.height
                     clip: true
 
-                    model: ListModel {
-                        id: tracksModel
-                    }
+                    model: tracksModel
 
                     delegate: ListItem {
                         contentHeight: Theme.itemSizeMedium
@@ -241,9 +252,7 @@ Page {
                     height: Screen.height - column.y - Theme.itemSizeSmall * 2 - miniPlayer.height
                     clip: true
 
-                    model: ListModel {
-                        id: albumsModel
-                    }
+                    model: albumsModel
 
                     delegate: ListItem {
                         contentHeight: Theme.itemSizeLarge
@@ -327,9 +336,7 @@ Page {
                     height: Screen.height - column.y - Theme.itemSizeSmall * 2 - miniPlayer.height
                     clip: true
 
-                    model: ListModel {
-                        id: showsModel
-                    }
+                    model: showsModel
 
                     delegate: ListItem {
                         contentHeight: Theme.itemSizeLarge

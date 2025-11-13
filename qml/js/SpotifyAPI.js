@@ -23,6 +23,12 @@ function request(endpoint, callback, errorCallback, method, data) {
     xhr.onreadystatechange = function() {
         if (xhr.readyState === XMLHttpRequest.DONE) {
             if (xhr.status >= 200 && xhr.status < 300) {
+                // Handle empty responses (204 No Content or empty body)
+                if (!xhr.responseText || xhr.responseText.trim() === "" || xhr.status === 204) {
+                    if (callback) callback(null)
+                    return
+                }
+
                 try {
                     var response = JSON.parse(xhr.responseText)
                     if (callback) callback(response)
