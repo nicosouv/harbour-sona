@@ -1,49 +1,181 @@
-name: Build Sailfish OS Package
+name: Build and Release
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    tags:
+      - 'v*.*.*'
   workflow_dispatch:
+
+env:
+  SAILFISH_RELEASE: '4.5.0.18'
 
 jobs:
   build:
+    name: Build RPM for ${{ matrix.arch }}
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        arch:
+          - armv7hl
+          - i486
+          - aarch64
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Create config.js with secrets
-      run: |
-        cat > qml/config.js << EOF
-        // Spotify API Configuration
-        // Auto-generated from GitHub Secrets
+      - name: Extract version
+        id: version
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+          else
+            VERSION="0.1.0-dev"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
 
-        .pragma library
+      - name: Update version in spec file
+        run: |
+          sed -i "s/^Version:.*/Version:    ${{ steps.version.outputs.version }}/" rpm/harbour-sona.spec
+          sed -i "s/^Version:.*/Version:    ${{ steps.version.outputs.version }}/" rpm/harbour-sona.yaml
 
-        var SPOTIFY_CLIENT_ID = "${{ secrets.SPOTIFY_CLIENT_ID }}"
-        var SPOTIFY_CLIENT_SECRET = "${{ secrets.SPOTIFY_CLIENT_SECRET }}"
-        EOF
+      - name: Create config.js with secrets
+        run: |
+          cat > qml/config.js << EOF
+          // Spotify API Configuration
+          // Auto-generated from GitHub Secrets
 
-    - name: Build Sailfish OS RPM
-      uses: R1tschY/sailfish-build-rpm@v1
-      with:
-        release: 4.5.0.19
-        arch: armv7hl
+          .pragma library
 
-    - name: Upload RPM artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: harbour-sona-rpm
-        path: RPMS/*.rpm
+          var SPOTIFY_CLIENT_ID = "${{ secrets.SPOTIFY_CLIENT_ID }}"
+          var SPOTIFY_CLIENT_SECRET = "${{ secrets.SPOTIFY_CLIENT_SECRET }}"
+          EOF
 
-    - name: Upload build logs
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-logs
-        path: |
-          *.log
-          buildroot/
+      - name: Build RPM for Sailfish OS
+        id: build
+        uses: R1tschY/sailfish-build-rpm@v1
+        with:
+          arch: ${{ matrix.arch }}
+          release: ${{ env.SAILFISH_RELEASE }}
+          fix-version: false
+          check: true
+
+      - name: List built packages
+        run: |
+          ls -lh RPMS/
+          echo "Built packages:"
+          find RPMS -name "*.rpm" -type f
+
+      - name: Upload RPM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpm-${{ matrix.arch }}
+          path: RPMS/*.rpm
+          if-no-files-found: error
+
+  create-release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-packages
+
+      - name: Organize packages
+        run: |
+          mkdir -p packages
+          find release-packages -name "*.rpm" -not -name "*debuginfo*" -not -name "*debugsource*" -exec cp {} packages/ \;
+          ls -lh packages/
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREVIOUS_TAG=$(git describe --abbrev=0 --tags $(git rev-list --tags --skip=1 --max-count=1) 2>/dev/null || echo "")
+
+          if [ -z "$PREVIOUS_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges)
+          else
+            COMMITS=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          fi
+
+          echo "## What's New in v${{ steps.version.outputs.version }}" > RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+
+          if [ -n "$COMMITS" ]; then
+            echo "$COMMITS" >> RELEASE_NOTES.md
+          else
+            echo "- No new commits found" >> RELEASE_NOTES.md
+          fi
+
+          cat >> RELEASE_NOTES.md << 'EOF'
+
+          ---
+
+          ## Installation
+
+          Download the RPM for your device:
+
+          - **armv7hl**: Jolla 1, Jolla C, Xperia X, Xperia XA2
+          - **aarch64**: Xperia 10 II/III/IV/V
+          - **i486**: Emulator
+
+          Install via command line:
+          ```bash
+          devel-su
+          pkcon install-local harbour-sona-*.rpm
+          ```
+
+          Or tap the RPM file in your file manager.
+
+          ---
+
+          ## Features
+
+          - OAuth2 authentication with Spotify
+          - Browse playlists
+          - Search tracks, artists, albums
+          - Control playback via Spotify Connect
+          - Now Playing view
+          - Shuffle and repeat controls
+
+          **Note:** Requires Spotify Premium for playback control.
+
+          ## Links
+
+          - Report issues: https://github.com/${{ github.repository }}/issues
+          - Documentation: https://github.com/${{ github.repository }}
+
+          EOF
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Sona v${{ steps.version.outputs.version }}
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: false
+          files: packages/*.rpm
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
