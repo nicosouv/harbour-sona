@@ -1,0 +1,7 @@
+// Spotify API Configuration
+// Copy this file to config.js and fill in your credentials
+
+.pragma library
+
+var SPOTIFY_CLIENT_ID = "YOUR_CLIENT_ID_HERE"
+var SPOTIFY_CLIENT_SECRET = "YOUR_CLIENT_SECRET_HERE"

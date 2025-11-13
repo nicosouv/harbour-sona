@@ -1,0 +1,49 @@
+name: Build Sailfish OS Package
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Create config.js with secrets
+      run: |
+        cat > qml/config.js << EOF
+        // Spotify API Configuration
+        // Auto-generated from GitHub Secrets
+
+        .pragma library
+
+        var SPOTIFY_CLIENT_ID = "${{ secrets.SPOTIFY_CLIENT_ID }}"
+        var SPOTIFY_CLIENT_SECRET = "${{ secrets.SPOTIFY_CLIENT_SECRET }}"
+        EOF
+
+    - name: Build Sailfish OS RPM
+      uses: R1tschY/sailfish-build-rpm@v1
+      with:
+        release: 4.5.0.19
+        arch: armv7hl
+
+    - name: Upload RPM artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: harbour-sona-rpm
+        path: RPMS/*.rpm
+
+    - name: Upload build logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-logs
+        path: |
+          *.log
+          buildroot/

@@ -1,0 +1,41 @@
+Name: harbour-sona
+Summary: Spotify client for Sailfish OS
+Version: 0.1.0
+Release: 1
+Group: Applications/Multimedia
+URL: https://github.com/yourusername/harbour-sona
+License: MIT
+Sources:
+- '%{name}-%{version}.tar.bz2'
+Description: |
+  Sona is a Spotify client for Sailfish OS that allows you to browse and control your Spotify playback.
+
+  Features:
+  - OAuth2 authentication with PKCE
+  - Browse playlists
+  - Search for music
+  - Control playback via Spotify Connect
+  - Now Playing view with album art
+  - Shuffle and repeat controls
+
+  Note: Requires Spotify Premium for playback control.
+
+Configure: none
+Builder: qtc5
+
+PkgConfigBR:
+- sailfishapp >= 1.0.2
+- Qt5Core
+- Qt5Qml
+- Qt5Quick
+- amberwebauthorization
+
+Requires:
+- sailfishsilica-qt5 >= 0.10.9
+- amber-web-authorization
+
+Files:
+- '%{_bindir}/%{name}'
+- '%{_datadir}/%{name}'
+- '%{_datadir}/applications/%{name}.desktop'
+- '%{_datadir}/icons/hicolor/*/apps/%{name}.png'
