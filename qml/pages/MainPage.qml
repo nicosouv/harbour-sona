@@ -123,13 +123,33 @@ Page {
         tokenEndpoint: "https://accounts.spotify.com/api/token"
 
         scopes: [
+            // Playback
             "user-read-playback-state",
             "user-modify-playback-state",
             "user-read-currently-playing",
+            // Library
             "user-library-read",
             "user-library-modify",
+            // Playlists
             "playlist-read-private",
-            "playlist-read-collaborative"
+            "playlist-read-collaborative",
+            "playlist-modify-public",
+            "playlist-modify-private",
+            // Listening History
+            "user-read-recently-played",
+            "user-top-read",
+            // Follow
+            "user-follow-read",
+            "user-follow-modify",
+            // User Profile
+            "user-read-email",
+            "user-read-private",
+            // Podcasts
+            "user-library-read",
+            "user-library-modify",
+            // Streaming (for Web Playback SDK - not used but doesn't hurt)
+            "streaming",
+            "app-remote-control"
         ]
 
         redirectUri: "harbour-sona://callback"
