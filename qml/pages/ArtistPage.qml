@@ -59,7 +59,7 @@ Page {
 
                         Icon {
                             anchors.centerIn: parent
-                            source: "image://theme/icon-l-contact"
+                            source: "image://theme/icon-l-people"
                             color: Theme.secondaryColor
                             width: Theme.iconSizeExtraLarge
                             height: Theme.iconSizeExtraLarge
@@ -349,7 +349,7 @@ Page {
 
                                     Icon {
                                         anchors.centerIn: parent
-                                        source: "image://theme/icon-m-contact"
+                                        source: "image://theme/icon-m-people"
                                         color: Theme.secondaryColor
                                     }
                                 }
