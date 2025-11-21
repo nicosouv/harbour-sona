@@ -246,17 +246,17 @@ Page {
                 }
             }
 
-            // Suggestion to launch Spotify Android
+            // No devices found - show message with optional launch button
             Column {
                 width: parent.width
                 spacing: Theme.paddingLarge
-                visible: !loading && devicesModel.count === 0 && spotifyAndroidInstalled && !spotifyAndroidRunning
+                visible: !loading && devicesModel.count === 0
 
-                Item { height: Theme.paddingLarge }
+                Item { height: Theme.paddingLarge * 2 }
 
                 Icon {
                     source: "image://theme/icon-l-music"
-                    color: Theme.highlightColor
+                    color: spotifyAndroidInstalled && !spotifyAndroidRunning ? Theme.highlightColor : Theme.secondaryColor
                     width: Theme.iconSizeExtraLarge
                     height: Theme.iconSizeExtraLarge
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -265,8 +265,10 @@ Page {
                 Label {
                     x: Theme.horizontalPageMargin
                     width: parent.width - 2 * Theme.horizontalPageMargin
-                    text: qsTr("Spotify detected on this device")
-                    color: Theme.highlightColor
+                    text: spotifyAndroidInstalled && !spotifyAndroidRunning ?
+                          qsTr("Spotify detected on this device") :
+                          qsTr("No Spotify app detected")
+                    color: spotifyAndroidInstalled && !spotifyAndroidRunning ? Theme.highlightColor : Theme.primaryColor
                     font.pixelSize: Theme.fontSizeLarge
                     font.bold: true
                     horizontalAlignment: Text.AlignHCenter
@@ -276,8 +278,10 @@ Page {
                 Label {
                     x: Theme.horizontalPageMargin
                     width: parent.width - 2 * Theme.horizontalPageMargin
-                    text: qsTr("Launch Spotify on this device to use it as a playback device")
-                    color: Theme.primaryColor
+                    text: spotifyAndroidInstalled && !spotifyAndroidRunning ?
+                          qsTr("Launch Spotify on this device to use it as a playback device") :
+                          qsTr("Launch the official Spotify app on a device (phone, computer, speaker) and start playing music, then refresh")
+                    color: Theme.secondaryColor
                     font.pixelSize: Theme.fontSizeSmall
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.WordWrap
@@ -288,15 +292,10 @@ Page {
                     anchors.horizontalCenter: parent.horizontalCenter
                     onClicked: launchSpotifyAndroid()
                     preferredWidth: Theme.buttonWidthMedium
+                    visible: spotifyAndroidInstalled && !spotifyAndroidRunning
                 }
 
                 Item { height: Theme.paddingLarge }
-            }
-
-            ViewPlaceholder {
-                enabled: !loading && devicesModel.count === 0 && (!spotifyAndroidInstalled || spotifyAndroidRunning)
-                text: qsTr("No Spotify app detected")
-                hintText: qsTr("Launch the official Spotify app on a device (phone, computer, speaker) and start playing music, then refresh")
             }
 
             // Info section
