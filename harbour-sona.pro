@@ -18,13 +18,17 @@ DISTFILES += qml/harbour-sona.qml \
     qml/pages/LibraryPage.qml \
     qml/pages/DiscoverPage.qml \
     qml/pages/AlbumDetailsPage.qml \
+    qml/pages/DevicesPage.qml \
+    qml/pages/StatsPage.qml \
     qml/components/PlaybackManager.qml \
     qml/components/MiniPlayer.qml \
     qml/components/TrackContextMenu.qml \
     qml/components/PlaylistDialog.qml \
     qml/components/ErrorNotification.qml \
+    qml/components/SpotifyAndroidHelper.qml \
     qml/components/qmldir \
     qml/js/SpotifyAPI.js \
+    qml/py/spotify_android.py \
     qml/config.js \
     qml/config.js.example \
     rpm/harbour-sona.changes \

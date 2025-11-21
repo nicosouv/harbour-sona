@@ -142,6 +142,52 @@ Page {
                 }
             }
 
+            // Device selector button
+            BackgroundItem {
+                id: deviceSelector
+                width: parent.width - Theme.horizontalPageMargin * 4
+                height: Theme.itemSizeSmall
+                anchors.horizontalCenter: parent.horizontalCenter
+                onClicked: pageStack.push(Qt.resolvedUrl("DevicesPage.qml"))
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: Theme.paddingMedium
+                    color: Theme.rgba(Theme.highlightBackgroundColor, deviceSelector.down ? 0.15 : 0.1)
+                    border.color: Theme.rgba(Theme.highlightColor, 0.3)
+                    border.width: 1
+
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: Theme.paddingMedium
+
+                        Icon {
+                            source: "image://theme/icon-m-speaker"
+                            color: PlaybackManager.trackName !== "" ? Theme.highlightColor : Theme.secondaryHighlightColor
+                            width: Theme.iconSizeSmall
+                            height: Theme.iconSizeSmall
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                        Label {
+                            text: PlaybackManager.trackName !== "" ? qsTr("Select playback device") : qsTr("Select a device to start")
+                            color: PlaybackManager.trackName !== "" ? Theme.highlightColor : Theme.secondaryHighlightColor
+                            font.pixelSize: Theme.fontSizeSmall
+                            font.bold: PlaybackManager.trackName === ""
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                        Icon {
+                            source: "image://theme/icon-m-right"
+                            color: Theme.secondaryColor
+                            width: Theme.iconSizeExtraSmall
+                            height: Theme.iconSizeExtraSmall
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+                }
+            }
+
             // Progress bar
             Column {
                 width: parent.width

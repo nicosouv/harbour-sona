@@ -10,9 +10,11 @@ Page {
     id: page
 
     property string accessToken: ""
+    property string refreshToken: ""
     property bool isAuthenticated: false
     property string userName: ""
     property string userEmail: ""
+    property bool hasCheckedDevices: false
 
     // Helper to get/set persistent data using LocalStorage
     function getStoredValue(key) {
@@ -47,6 +49,76 @@ Page {
     function setCodeVerifier(value) { setStoredValue('codeVerifier', value) }
     function clearCodeVerifier() { clearStoredValue('codeVerifier') }
 
+    // Check for available Spotify devices
+    function checkDevicesAndShowSelector() {
+        if (hasCheckedDevices) return
+        hasCheckedDevices = true
+
+        console.log("Checking for available Spotify devices...")
+        SpotifyAPI.getAvailableDevices(function(data) {
+            if (!data || !data.devices || data.devices.length === 0) {
+                console.log("No devices found, showing device selector")
+                // No devices found, show the DevicesPage immediately
+                pageStack.push(Qt.resolvedUrl("DevicesPage.qml"))
+            } else {
+                console.log("Found", data.devices.length, "device(s)")
+            }
+        }, function(error) {
+            console.error("Failed to check devices:", error)
+        })
+    }
+
+    // Refresh the access token using the refresh token
+    function refreshAccessToken(onSuccess, onError) {
+        var savedRefreshToken = getStoredValue('refreshToken')
+        if (!savedRefreshToken) {
+            console.error("No refresh token available")
+            if (onError) onError("No refresh token")
+            return
+        }
+
+        console.log("Refreshing access token...")
+        SpotifyAPI.refreshAccessToken(
+            savedRefreshToken,
+            Config.SPOTIFY_CLIENT_ID,
+            Config.SPOTIFY_CLIENT_SECRET,
+            function(tokenResponse) {
+                console.log("Token refreshed successfully!")
+                page.accessToken = tokenResponse.access_token
+                page.isAuthenticated = true
+
+                // Update stored access token
+                setStoredValue('accessToken', tokenResponse.access_token)
+
+                // Update refresh token if provided (Spotify may rotate it)
+                if (tokenResponse.refresh_token) {
+                    page.refreshToken = tokenResponse.refresh_token
+                    setStoredValue('refreshToken', tokenResponse.refresh_token)
+                }
+
+                // Update expiration time
+                var expiresAt = Date.now() + (tokenResponse.expires_in * 1000)
+                setStoredValue('tokenExpiresAt', expiresAt.toString())
+
+                // Set token in API client
+                SpotifyAPI.setAccessToken(tokenResponse.access_token)
+
+                if (onSuccess) onSuccess()
+            },
+            function(error) {
+                console.error("Failed to refresh token:", error)
+                // Token refresh failed, clear stored credentials
+                clearStoredValue('accessToken')
+                clearStoredValue('refreshToken')
+                clearStoredValue('tokenExpiresAt')
+                page.accessToken = ""
+                page.refreshToken = ""
+                page.isAuthenticated = false
+                if (onError) onError(error)
+            }
+        )
+    }
+
     // Helper function to parse URL parameters
     function parseUrlParams(url) {
         var params = {}
@@ -68,24 +140,73 @@ Page {
     Component.onCompleted: {
         // Try to load saved token first
         var savedToken = getStoredValue('accessToken')
-        if (savedToken) {
-            console.log("Found saved token, attempting to use it")
-            page.accessToken = savedToken
-            page.isAuthenticated = true
-            SpotifyAPI.setAccessToken(savedToken)
+        var savedRefreshToken = getStoredValue('refreshToken')
+        var expiresAtStr = getStoredValue('tokenExpiresAt')
 
-            // Load user profile
-            SpotifyAPI.getUserProfile(function(profile) {
-                console.log("User profile loaded:", profile.display_name)
-                page.userName = profile.display_name || profile.id
-                page.userEmail = profile.email || ""
-            }, function(error) {
-                console.error("Saved token invalid, clearing:", error)
-                // Token expired or invalid, clear it
-                clearStoredValue('accessToken')
-                page.accessToken = ""
-                page.isAuthenticated = false
-            })
+        if (savedToken) {
+            var expiresAt = expiresAtStr ? parseInt(expiresAtStr) : 0
+            var now = Date.now()
+            var timeUntilExpiry = expiresAt - now
+
+            // Check if token is expired or will expire in less than 5 minutes
+            if (expiresAt > 0 && timeUntilExpiry < 5 * 60 * 1000) {
+                console.log("Token expired or expiring soon, attempting refresh...")
+                if (savedRefreshToken) {
+                    refreshAccessToken(function() {
+                        // Success - load user profile
+                        SpotifyAPI.getUserProfile(function(profile) {
+                            console.log("User profile loaded:", profile.display_name)
+                            page.userName = profile.display_name || profile.id
+                            page.userEmail = profile.email || ""
+                            // Check for available devices
+                            checkDevicesAndShowSelector()
+                        })
+                    }, function(error) {
+                        console.error("Token refresh failed:", error)
+                    })
+                } else {
+                    console.log("No refresh token available, clearing credentials")
+                    clearStoredValue('accessToken')
+                    clearStoredValue('tokenExpiresAt')
+                    page.accessToken = ""
+                    page.isAuthenticated = false
+                }
+            } else {
+                console.log("Found valid saved token")
+                page.accessToken = savedToken
+                page.refreshToken = savedRefreshToken || ""
+                page.isAuthenticated = true
+                SpotifyAPI.setAccessToken(savedToken)
+
+                // Load user profile
+                SpotifyAPI.getUserProfile(function(profile) {
+                    console.log("User profile loaded:", profile.display_name)
+                    page.userName = profile.display_name || profile.id
+                    page.userEmail = profile.email || ""
+                    // Check for available devices
+                    checkDevicesAndShowSelector()
+                }, function(error) {
+                    console.error("Saved token invalid, attempting refresh:", error)
+                    // Token invalid, try to refresh
+                    if (savedRefreshToken) {
+                        refreshAccessToken(function() {
+                            // Success - reload user profile
+                            SpotifyAPI.getUserProfile(function(profile) {
+                                console.log("User profile loaded after refresh:", profile.display_name)
+                                page.userName = profile.display_name || profile.id
+                                page.userEmail = profile.email || ""
+                                // Check for available devices
+                                checkDevicesAndShowSelector()
+                            })
+                        })
+                    } else {
+                        clearStoredValue('accessToken')
+                        clearStoredValue('tokenExpiresAt')
+                        page.accessToken = ""
+                        page.isAuthenticated = false
+                    }
+                })
+            }
         }
 
         // Check if app was launched with a callback URL
@@ -112,10 +233,18 @@ Page {
                         function(tokenResponse) {
                             console.log("Access token received!")
                             page.accessToken = tokenResponse.access_token
+                            page.refreshToken = tokenResponse.refresh_token || ""
                             page.isAuthenticated = true
 
-                            // Save token for next time
+                            // Save token and refresh token for next time
                             setStoredValue('accessToken', tokenResponse.access_token)
+                            if (tokenResponse.refresh_token) {
+                                setStoredValue('refreshToken', tokenResponse.refresh_token)
+                            }
+
+                            // Save expiration time (current time + expires_in seconds)
+                            var expiresAt = Date.now() + (tokenResponse.expires_in * 1000)
+                            setStoredValue('tokenExpiresAt', expiresAt.toString())
 
                             // Clear the stored code verifier (security best practice)
                             clearCodeVerifier()
@@ -131,6 +260,8 @@ Page {
                                 // Save user info
                                 setStoredValue('userName', page.userName)
                                 setStoredValue('userEmail', page.userEmail)
+                                // Check for available devices
+                                checkDevicesAndShowSelector()
                             }, function(error) {
                                 console.error("Failed to get user profile:", error)
                             })

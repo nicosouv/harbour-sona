@@ -7,9 +7,16 @@ Page {
     id: page
 
     property bool loading: false
+    property bool spotifyAndroidInstalled: false
+    property bool spotifyAndroidRunning: false
+    property bool checkingSpotifyAndroid: false
 
     ListModel {
         id: devicesModel
+    }
+
+    SpotifyAndroidHelper {
+        id: spotifyAndroidHelper
     }
 
     Timer {
@@ -17,6 +24,48 @@ Page {
         interval: 500
         repeat: false
         onTriggered: loadDevices()
+    }
+
+    Timer {
+        id: checkSpotifyTimer
+        interval: 1000
+        repeat: false
+        onTriggered: checkSpotifyAndroid()
+    }
+
+    // Check if Spotify Android is installed and running
+    function checkSpotifyAndroid() {
+        if (checkingSpotifyAndroid) return
+        checkingSpotifyAndroid = true
+
+        spotifyAndroidHelper.checkInstalled(function(installed) {
+            spotifyAndroidInstalled = installed
+            console.log("Spotify Android installed:", spotifyAndroidInstalled)
+
+            if (spotifyAndroidInstalled) {
+                spotifyAndroidHelper.checkRunning(function(running) {
+                    spotifyAndroidRunning = running
+                    console.log("Spotify Android running:", spotifyAndroidRunning)
+                    checkingSpotifyAndroid = false
+                })
+            } else {
+                checkingSpotifyAndroid = false
+            }
+        })
+    }
+
+    // Launch Spotify Android app
+    function launchSpotifyAndroid() {
+        console.log("Launching Spotify Android...")
+        spotifyAndroidHelper.launch(function(success) {
+            console.log("Spotify Android launch result:", success)
+            if (success) {
+                spotifyAndroidRunning = true
+                // Wait a bit for Spotify to start, then reload devices
+                reloadTimer.interval = 3000
+                reloadTimer.restart()
+            }
+        })
     }
 
     SilicaFlickable {
@@ -197,10 +246,57 @@ Page {
                 }
             }
 
+            // Suggestion to launch Spotify Android
+            Column {
+                width: parent.width
+                spacing: Theme.paddingLarge
+                visible: !loading && devicesModel.count === 0 && spotifyAndroidInstalled && !spotifyAndroidRunning
+
+                Item { height: Theme.paddingLarge }
+
+                Icon {
+                    source: "image://theme/icon-l-music"
+                    color: Theme.highlightColor
+                    width: Theme.iconSizeExtraLarge
+                    height: Theme.iconSizeExtraLarge
+                    anchors.horizontalCenter: parent.horizontalCenter
+                }
+
+                Label {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    text: qsTr("Spotify detected on this device")
+                    color: Theme.highlightColor
+                    font.pixelSize: Theme.fontSizeLarge
+                    font.bold: true
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.WordWrap
+                }
+
+                Label {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    text: qsTr("Launch Spotify on this device to use it as a playback device")
+                    color: Theme.primaryColor
+                    font.pixelSize: Theme.fontSizeSmall
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.WordWrap
+                }
+
+                Button {
+                    text: qsTr("Launch Spotify")
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    onClicked: launchSpotifyAndroid()
+                    preferredWidth: Theme.buttonWidthMedium
+                }
+
+                Item { height: Theme.paddingLarge }
+            }
+
             ViewPlaceholder {
-                enabled: !loading && devicesModel.count === 0
-                text: qsTr("No devices found")
-                hintText: qsTr("Start Spotify on another device first")
+                enabled: !loading && devicesModel.count === 0 && (!spotifyAndroidInstalled || spotifyAndroidRunning)
+                text: qsTr("No Spotify app detected")
+                hintText: qsTr("Launch the official Spotify app on a device (phone, computer, speaker) and start playing music, then refresh")
             }
 
             // Info section
@@ -317,15 +413,27 @@ Page {
                         volumePercent: device.volume_percent !== null ? device.volume_percent : -1
                     })
                 }
+
+                // If no devices found, check for Spotify Android
+                if (data.devices.length === 0) {
+                    checkSpotifyTimer.start()
+                }
+            } else {
+                // No data, check for Spotify Android
+                checkSpotifyTimer.start()
             }
         }, function(error) {
             loading = false
             console.error("Failed to load devices:", error)
+            // On error, also check for Spotify Android
+            checkSpotifyTimer.start()
         })
     }
 
     Component.onCompleted: {
         loadDevices()
+        // Check for Spotify Android in background
+        checkSpotifyTimer.start()
     }
 
     MiniPlayer {

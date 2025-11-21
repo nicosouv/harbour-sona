@@ -589,3 +589,46 @@ function exchangeCodeForToken(code, codeVerifier, clientId, clientSecret, redire
 
     xhr.send(params)
 }
+
+// Refresh access token using refresh token
+function refreshAccessToken(refreshToken, clientId, clientSecret, callback, errorCallback) {
+    var xhr = new XMLHttpRequest()
+    var url = "https://accounts.spotify.com/api/token"
+
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    var response = JSON.parse(xhr.responseText)
+                    if (callback) callback(response)
+                } catch (e) {
+                    console.error("Failed to parse refresh token response:", e)
+                    if (errorCallback) errorCallback("Parse error: " + e)
+                }
+            } else {
+                console.error("Token refresh failed:", xhr.status, xhr.statusText, xhr.responseText)
+                if (errorCallback) {
+                    try {
+                        var error = JSON.parse(xhr.responseText)
+                        errorCallback(error.error_description || error.error || xhr.statusText)
+                    } catch (e) {
+                        errorCallback(xhr.statusText)
+                    }
+                }
+            }
+        }
+    }
+
+    xhr.open("POST", url, true)
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded")
+
+    var params = "grant_type=refresh_token"
+    params += "&refresh_token=" + encodeURIComponent(refreshToken)
+    params += "&client_id=" + encodeURIComponent(clientId)
+
+    if (clientSecret) {
+        params += "&client_secret=" + encodeURIComponent(clientSecret)
+    }
+
+    xhr.send(params)
+}
