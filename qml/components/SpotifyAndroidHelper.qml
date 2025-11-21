@@ -1,31 +1,53 @@
 import QtQuick 2.0
+import harbour.sona.SpotifyAndroid 1.0
 
-QtObject {
-    id: helper
+Item {
+    id: wrapper
 
-    // For now, we'll use a simple approach that always returns false
-    // This way the feature is safe but doesn't break anything
-    // Real implementation would need C++ backend or Nemo.DBus
+    property var _pendingInstalledCallback: null
+    property var _pendingRunningCallback: null
+    property var _pendingLaunchCallback: null
+
+    SpotifyAndroidHelper {
+        id: backend
+
+        onInstalledResult: {
+            console.log("SpotifyAndroidHelper QML: Installed result:", installed)
+            if (_pendingInstalledCallback) {
+                _pendingInstalledCallback(installed)
+                _pendingInstalledCallback = null
+            }
+        }
+
+        onRunningResult: {
+            console.log("SpotifyAndroidHelper QML: Running result:", running)
+            if (_pendingRunningCallback) {
+                _pendingRunningCallback(running)
+                _pendingRunningCallback = null
+            }
+        }
+
+        onLaunchResult: {
+            console.log("SpotifyAndroidHelper QML: Launch result:", success)
+            if (_pendingLaunchCallback) {
+                _pendingLaunchCallback(success)
+                _pendingLaunchCallback = null
+            }
+        }
+    }
 
     function checkInstalled(callback) {
-        // Would need C++ backend to properly check
-        // For now, always return false to be safe
-        if (callback) callback(false)
+        _pendingInstalledCallback = callback
+        backend.checkInstalled()
     }
 
     function checkRunning(callback) {
-        // Would need C++ backend to properly check
-        // For now, always return false to be safe
-        if (callback) callback(false)
+        _pendingRunningCallback = callback
+        backend.checkRunning()
     }
 
     function launch(callback) {
-        // Try to launch using Qt.openUrlExternally with Android package URI
-        console.log("Attempting to launch Spotify Android...")
-
-        // This should work if Alien Dalvik is available
-        Qt.openUrlExternally("market://details?id=com.spotify.music")
-
-        if (callback) callback(true)
+        _pendingLaunchCallback = callback
+        backend.launch()
     }
 }

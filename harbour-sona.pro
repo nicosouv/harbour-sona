@@ -4,7 +4,10 @@ CONFIG += sailfishapp
 
 PKGCONFIG += amberwebauthorization
 
-SOURCES += src/harbour-sona.cpp
+SOURCES += src/harbour-sona.cpp \
+    src/spotifyandroidhelper.cpp
+
+HEADERS += src/spotifyandroidhelper.h
 
 DISTFILES += qml/harbour-sona.qml \
     qml/cover/CoverPage.qml \
@@ -28,7 +31,6 @@ DISTFILES += qml/harbour-sona.qml \
     qml/components/SpotifyAndroidHelper.qml \
     qml/components/qmldir \
     qml/js/SpotifyAPI.js \
-    qml/py/spotify_android.py \
     qml/config.js \
     qml/config.js.example \
     rpm/harbour-sona.changes \
