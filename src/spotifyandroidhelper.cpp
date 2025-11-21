@@ -34,8 +34,8 @@ void SpotifyAndroidHelper::checkInstalled()
     }
 
     m_checkInstalledProcess = new QProcess(this);
-    connect(m_checkInstalledProcess, &QProcess::finished,
-            this, &SpotifyAndroidHelper::onCheckInstalledFinished);
+    connect(m_checkInstalledProcess, SIGNAL(finished(int,QProcess::ExitStatus)),
+            this, SLOT(onCheckInstalledFinished(int,QProcess::ExitStatus)));
 
     // Try to list packages and grep for Spotify
     m_checkInstalledProcess->start("sh", QStringList() << "-c" << "apkd-launcher --list-packages 2>/dev/null | grep -q com.spotify.music");
@@ -67,8 +67,8 @@ void SpotifyAndroidHelper::checkRunning()
     }
 
     m_checkRunningProcess = new QProcess(this);
-    connect(m_checkRunningProcess, &QProcess::finished,
-            this, &SpotifyAndroidHelper::onCheckRunningFinished);
+    connect(m_checkRunningProcess, SIGNAL(finished(int,QProcess::ExitStatus)),
+            this, SLOT(onCheckRunningFinished(int,QProcess::ExitStatus)));
 
     // Check if the process is running
     m_checkRunningProcess->start("pgrep", QStringList() << "-f" << "com.spotify.music");
@@ -100,8 +100,8 @@ void SpotifyAndroidHelper::launch()
     }
 
     m_launchProcess = new QProcess(this);
-    connect(m_launchProcess, &QProcess::finished,
-            this, &SpotifyAndroidHelper::onLaunchFinished);
+    connect(m_launchProcess, SIGNAL(finished(int,QProcess::ExitStatus)),
+            this, SLOT(onLaunchFinished(int,QProcess::ExitStatus)));
 
     // Launch the app
     m_launchProcess->start("apkd-launcher", QStringList() << "--start" << "com.spotify.music");
