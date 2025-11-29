@@ -217,22 +217,26 @@ Page {
                     }
                 }
 
-                Row {
+                Item {
                     width: parent.width - Theme.horizontalPageMargin * 2
                     x: Theme.horizontalPageMargin
+                    height: progressLabel.height
 
                     Label {
+                        id: progressLabel
+                        anchors.left: parent.left
                         text: formatTime(PlaybackManager.progressMs)
                         font.pixelSize: Theme.fontSizeExtraSmall
                         color: Theme.secondaryColor
+                        font.family: "monospace"
                     }
 
-                    Item { width: parent.width - Theme.fontSizeExtraSmall * 10 }
-
                     Label {
+                        anchors.right: parent.right
                         text: formatTime(PlaybackManager.durationMs)
                         font.pixelSize: Theme.fontSizeExtraSmall
                         color: Theme.secondaryColor
+                        font.family: "monospace"
                     }
                 }
             }
