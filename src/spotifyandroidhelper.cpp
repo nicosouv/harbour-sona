@@ -37,19 +37,31 @@ void SpotifyAndroidHelper::checkInstalled()
     connect(m_checkInstalledProcess, SIGNAL(finished(int,QProcess::ExitStatus)),
             this, SLOT(onCheckInstalledFinished(int,QProcess::ExitStatus)));
 
-    // Try to list packages and grep for Spotify
-    m_checkInstalledProcess->start("sh", QStringList() << "-c" << "apkd-launcher --list-packages 2>/dev/null | grep -q com.spotify.music");
+    // List all packages and capture output
+    m_checkInstalledProcess->start("apkd-launcher", QStringList() << "--list-packages");
 }
 
 void SpotifyAndroidHelper::onCheckInstalledFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
     bool installed = false;
 
-    if (exitStatus == QProcess::NormalExit && exitCode == 0) {
-        installed = true;
-        qDebug() << "SpotifyAndroidHelper: Spotify Android is installed";
+    if (exitStatus == QProcess::NormalExit) {
+        QString output = QString::fromUtf8(m_checkInstalledProcess->readAllStandardOutput());
+        QString errorOutput = QString::fromUtf8(m_checkInstalledProcess->readAllStandardError());
+
+        qDebug() << "SpotifyAndroidHelper: apkd-launcher exit code:" << exitCode;
+        qDebug() << "SpotifyAndroidHelper: stdout:" << output;
+        qDebug() << "SpotifyAndroidHelper: stderr:" << errorOutput;
+
+        installed = output.contains("com.spotify.music");
+
+        if (installed) {
+            qDebug() << "SpotifyAndroidHelper: Spotify Android is installed";
+        } else {
+            qDebug() << "SpotifyAndroidHelper: Spotify Android is NOT installed";
+        }
     } else {
-        qDebug() << "SpotifyAndroidHelper: Spotify Android is NOT installed";
+        qDebug() << "SpotifyAndroidHelper: Process crashed or failed";
     }
 
     emit installedResult(installed);
@@ -78,11 +90,22 @@ void SpotifyAndroidHelper::onCheckRunningFinished(int exitCode, QProcess::ExitSt
 {
     bool running = false;
 
-    if (exitStatus == QProcess::NormalExit && exitCode == 0) {
-        running = true;
-        qDebug() << "SpotifyAndroidHelper: Spotify Android is running";
+    if (exitStatus == QProcess::NormalExit) {
+        QString output = QString::fromUtf8(m_checkRunningProcess->readAllStandardOutput());
+
+        qDebug() << "SpotifyAndroidHelper: pgrep exit code:" << exitCode;
+        qDebug() << "SpotifyAndroidHelper: pgrep output:" << output;
+
+        // pgrep returns 0 if found, 1 if not found
+        running = (exitCode == 0 && !output.trimmed().isEmpty());
+
+        if (running) {
+            qDebug() << "SpotifyAndroidHelper: Spotify Android is running";
+        } else {
+            qDebug() << "SpotifyAndroidHelper: Spotify Android is NOT running";
+        }
     } else {
-        qDebug() << "SpotifyAndroidHelper: Spotify Android is NOT running";
+        qDebug() << "SpotifyAndroidHelper: pgrep process crashed or failed";
     }
 
     emit runningResult(running);
@@ -109,7 +132,14 @@ void SpotifyAndroidHelper::launch()
 
 void SpotifyAndroidHelper::onLaunchFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
-    bool success = (exitStatus == QProcess::NormalExit);
+    QString output = QString::fromUtf8(m_launchProcess->readAllStandardOutput());
+    QString errorOutput = QString::fromUtf8(m_launchProcess->readAllStandardError());
+
+    qDebug() << "SpotifyAndroidHelper: Launch exit code:" << exitCode;
+    qDebug() << "SpotifyAndroidHelper: Launch stdout:" << output;
+    qDebug() << "SpotifyAndroidHelper: Launch stderr:" << errorOutput;
+
+    bool success = (exitStatus == QProcess::NormalExit && exitCode == 0);
 
     if (success) {
         qDebug() << "SpotifyAndroidHelper: Spotify Android launch command succeeded";
