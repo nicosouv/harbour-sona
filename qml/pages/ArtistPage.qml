@@ -209,7 +209,16 @@ Page {
                         }
 
                         onClicked: {
-                            PlaybackManager.play(null, null, [model.uri])
+                            // Build array of all top track URIs starting from clicked track
+                            var uris = []
+                            for (var i = index; i < topTracksModel.count; i++) {
+                                uris.push(topTracksModel.get(i).uri)
+                            }
+                            // Add tracks before the clicked one to the end for continuous play
+                            for (var j = 0; j < index; j++) {
+                                uris.push(topTracksModel.get(j).uri)
+                            }
+                            PlaybackManager.play(null, null, uris)
                         }
                     }
                 }

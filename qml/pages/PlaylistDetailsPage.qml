@@ -128,10 +128,11 @@ Page {
             }
 
             onClicked: {
-                SpotifyAPI.play(null, null, [model.uri], function() {
-                    console.log("Playing track:", model.name)
+                // Play the entire playlist starting from this track
+                SpotifyAPI.startPlayback(null, "spotify:playlist:" + playlistId, null, {position: index}, null, function() {
+                    console.log("Playing playlist from track", index + 1)
                 }, function(error) {
-                    console.error("Failed to play track:", error)
+                    console.error("Failed to play playlist:", error)
                 })
             }
         }

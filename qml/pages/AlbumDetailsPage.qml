@@ -143,7 +143,12 @@ Page {
             }
 
             onClicked: {
-                PlaybackManager.play(null, null, [model.uri])
+                // Play the entire album starting from this track
+                SpotifyAPI.startPlayback(null, albumUri, null, {position: index}, null, function() {
+                    console.log("Playing album from track", index + 1)
+                }, function(error) {
+                    console.error("Failed to play album:", error)
+                })
             }
 
             TrackContextMenu {
