@@ -33,38 +33,14 @@ Page {
         onTriggered: checkSpotifyAndroid()
     }
 
-    // Check if Spotify Android is installed and running
-    function checkSpotifyAndroid() {
-        if (checkingSpotifyAndroid) return
-        checkingSpotifyAndroid = true
-
-        spotifyAndroidHelper.checkInstalled(function(installed) {
-            spotifyAndroidInstalled = installed
-            console.log("Spotify Android installed:", spotifyAndroidInstalled)
-
-            if (spotifyAndroidInstalled) {
-                spotifyAndroidHelper.checkRunning(function(running) {
-                    spotifyAndroidRunning = running
-                    console.log("Spotify Android running:", spotifyAndroidRunning)
-                    checkingSpotifyAndroid = false
-                })
-            } else {
-                checkingSpotifyAndroid = false
-            }
-        })
-    }
-
     // Launch Spotify Android app
     function launchSpotifyAndroid() {
         console.log("Launching Spotify Android...")
         spotifyAndroidHelper.launch(function(success) {
             console.log("Spotify Android launch result:", success)
-            if (success) {
-                spotifyAndroidRunning = true
-                // Wait a bit for Spotify to start, then reload devices
-                reloadTimer.interval = 3000
-                reloadTimer.restart()
-            }
+            // Wait a bit for Spotify to start, then reload devices
+            reloadTimer.interval = 3000
+            reloadTimer.restart()
         })
     }
 
@@ -246,7 +222,7 @@ Page {
                 }
             }
 
-            // No devices found - show message with optional launch button
+            // No devices found - show message with launch button
             Column {
                 width: parent.width
                 spacing: Theme.paddingLarge
@@ -256,7 +232,7 @@ Page {
 
                 Icon {
                     source: "image://theme/icon-l-music"
-                    color: spotifyAndroidInstalled && !spotifyAndroidRunning ? Theme.highlightColor : Theme.secondaryColor
+                    color: Theme.secondaryColor
                     width: Theme.iconSizeExtraLarge
                     height: Theme.iconSizeExtraLarge
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -265,10 +241,8 @@ Page {
                 Label {
                     x: Theme.horizontalPageMargin
                     width: parent.width - 2 * Theme.horizontalPageMargin
-                    text: spotifyAndroidInstalled && !spotifyAndroidRunning ?
-                          qsTr("Spotify detected on this device") :
-                          qsTr("No Spotify app detected")
-                    color: spotifyAndroidInstalled && !spotifyAndroidRunning ? Theme.highlightColor : Theme.primaryColor
+                    text: qsTr("No active device found")
+                    color: Theme.primaryColor
                     font.pixelSize: Theme.fontSizeLarge
                     font.bold: true
                     horizontalAlignment: Text.AlignHCenter
@@ -278,9 +252,7 @@ Page {
                 Label {
                     x: Theme.horizontalPageMargin
                     width: parent.width - 2 * Theme.horizontalPageMargin
-                    text: spotifyAndroidInstalled && !spotifyAndroidRunning ?
-                          qsTr("Launch Spotify on this device to use it as a playback device") :
-                          qsTr("Launch the official Spotify app on a device (phone, computer, speaker) and start playing music, then refresh")
+                    text: qsTr("Start playing music on a Spotify app (phone, computer, speaker) then refresh")
                     color: Theme.secondaryColor
                     font.pixelSize: Theme.fontSizeSmall
                     horizontalAlignment: Text.AlignHCenter
@@ -288,11 +260,10 @@ Page {
                 }
 
                 Button {
-                    text: qsTr("Launch Spotify")
+                    text: qsTr("Launch Spotify on this device")
                     anchors.horizontalCenter: parent.horizontalCenter
                     onClicked: launchSpotifyAndroid()
-                    preferredWidth: Theme.buttonWidthMedium
-                    visible: spotifyAndroidInstalled && !spotifyAndroidRunning
+                    preferredWidth: Theme.buttonWidthLarge
                 }
 
                 Item { height: Theme.paddingLarge }
@@ -413,26 +384,15 @@ Page {
                     })
                 }
 
-                // If no devices found, check for Spotify Android
-                if (data.devices.length === 0) {
-                    checkSpotifyTimer.start()
-                }
-            } else {
-                // No data, check for Spotify Android
-                checkSpotifyTimer.start()
             }
         }, function(error) {
             loading = false
             console.error("Failed to load devices:", error)
-            // On error, also check for Spotify Android
-            checkSpotifyTimer.start()
         })
     }
 
     Component.onCompleted: {
         loadDevices()
-        // Check for Spotify Android in background
-        checkSpotifyTimer.start()
     }
 
     MiniPlayer {
