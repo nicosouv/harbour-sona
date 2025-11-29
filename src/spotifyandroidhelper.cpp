@@ -37,8 +37,8 @@ void SpotifyAndroidHelper::checkInstalled()
     connect(m_checkInstalledProcess, SIGNAL(finished(int,QProcess::ExitStatus)),
             this, SLOT(onCheckInstalledFinished(int,QProcess::ExitStatus)));
 
-    // List all packages and capture output
-    m_checkInstalledProcess->start("apkd-launcher", QStringList() << "--list-packages");
+    // Check if Spotify data directory exists in android_storage
+    m_checkInstalledProcess->start("test", QStringList() << "-d" << "/home/defaultuser/android_storage/Android/data/com.spotify.music");
 }
 
 void SpotifyAndroidHelper::onCheckInstalledFinished(int exitCode, QProcess::ExitStatus exitStatus)
@@ -46,14 +46,10 @@ void SpotifyAndroidHelper::onCheckInstalledFinished(int exitCode, QProcess::Exit
     bool installed = false;
 
     if (exitStatus == QProcess::NormalExit) {
-        QString output = QString::fromUtf8(m_checkInstalledProcess->readAllStandardOutput());
-        QString errorOutput = QString::fromUtf8(m_checkInstalledProcess->readAllStandardError());
+        qDebug() << "SpotifyAndroidHelper: test -d exit code:" << exitCode;
 
-        qDebug() << "SpotifyAndroidHelper: apkd-launcher exit code:" << exitCode;
-        qDebug() << "SpotifyAndroidHelper: stdout:" << output;
-        qDebug() << "SpotifyAndroidHelper: stderr:" << errorOutput;
-
-        installed = output.contains("com.spotify.music");
+        // test -d returns 0 if directory exists
+        installed = (exitCode == 0);
 
         if (installed) {
             qDebug() << "SpotifyAndroidHelper: Spotify Android is installed";
@@ -61,7 +57,7 @@ void SpotifyAndroidHelper::onCheckInstalledFinished(int exitCode, QProcess::Exit
             qDebug() << "SpotifyAndroidHelper: Spotify Android is NOT installed";
         }
     } else {
-        qDebug() << "SpotifyAndroidHelper: Process crashed or failed";
+        qDebug() << "SpotifyAndroidHelper: test process crashed or failed";
     }
 
     emit installedResult(installed);
@@ -126,8 +122,8 @@ void SpotifyAndroidHelper::launch()
     connect(m_launchProcess, SIGNAL(finished(int,QProcess::ExitStatus)),
             this, SLOT(onLaunchFinished(int,QProcess::ExitStatus)));
 
-    // Launch the app
-    m_launchProcess->start("apkd-launcher", QStringList() << "--start" << "com.spotify.music");
+    // Launch the app using apkd-launcher
+    m_launchProcess->start("apkd-launcher", QStringList() << "com.spotify.music");
 }
 
 void SpotifyAndroidHelper::onLaunchFinished(int exitCode, QProcess::ExitStatus exitStatus)
