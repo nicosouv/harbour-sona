@@ -7,16 +7,9 @@ Page {
     id: page
 
     property bool loading: false
-    property bool spotifyAndroidInstalled: false
-    property bool spotifyAndroidRunning: false
-    property bool checkingSpotifyAndroid: false
 
     ListModel {
         id: devicesModel
-    }
-
-    SpotifyAndroidHelper {
-        id: spotifyAndroidHelper
     }
 
     Timer {
@@ -24,24 +17,6 @@ Page {
         interval: 500
         repeat: false
         onTriggered: loadDevices()
-    }
-
-    Timer {
-        id: checkSpotifyTimer
-        interval: 1000
-        repeat: false
-        onTriggered: checkSpotifyAndroid()
-    }
-
-    // Launch Spotify Android app
-    function launchSpotifyAndroid() {
-        console.log("Launching Spotify Android...")
-        spotifyAndroidHelper.launch(function(success) {
-            console.log("Spotify Android launch result:", success)
-            // Wait a bit for Spotify to start, then reload devices
-            reloadTimer.interval = 3000
-            reloadTimer.restart()
-        })
     }
 
     SilicaFlickable {
@@ -222,51 +197,10 @@ Page {
                 }
             }
 
-            // No devices found - show message with launch button
-            Column {
-                width: parent.width
-                spacing: Theme.paddingLarge
-                visible: !loading && devicesModel.count === 0
-
-                Item { height: Theme.paddingLarge * 2 }
-
-                Icon {
-                    source: "image://theme/icon-l-music"
-                    color: Theme.secondaryColor
-                    width: Theme.iconSizeExtraLarge
-                    height: Theme.iconSizeExtraLarge
-                    anchors.horizontalCenter: parent.horizontalCenter
-                }
-
-                Label {
-                    x: Theme.horizontalPageMargin
-                    width: parent.width - 2 * Theme.horizontalPageMargin
-                    text: qsTr("No active device found")
-                    color: Theme.primaryColor
-                    font.pixelSize: Theme.fontSizeLarge
-                    font.bold: true
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap
-                }
-
-                Label {
-                    x: Theme.horizontalPageMargin
-                    width: parent.width - 2 * Theme.horizontalPageMargin
-                    text: qsTr("Start playing music on a Spotify app (phone, computer, speaker) then refresh")
-                    color: Theme.secondaryColor
-                    font.pixelSize: Theme.fontSizeSmall
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap
-                }
-
-                Button {
-                    text: qsTr("Launch Spotify on this device")
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    onClicked: launchSpotifyAndroid()
-                    preferredWidth: Theme.buttonWidthLarge
-                }
-
-                Item { height: Theme.paddingLarge }
+            ViewPlaceholder {
+                enabled: !loading && devicesModel.count === 0
+                text: qsTr("No active device found")
+                hintText: qsTr("Start playing music on the official Spotify app (phone, computer, speaker) then pull down to refresh")
             }
 
             // Info section
