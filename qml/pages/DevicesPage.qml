@@ -207,7 +207,7 @@ Page {
             Item {
                 width: parent.width
                 height: infoColumn.height
-                visible: !loading
+                visible: !loading && devicesModel.count > 0
 
                 Column {
                     id: infoColumn
